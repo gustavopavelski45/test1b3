@@ -196,6 +196,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 .pbox{background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.1);border-radius:6px;padding:9px 11px}
 .pbox-l{font-size:8px;color:rgba(96,165,250,.6);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:3px}
 .pbox-v{font-size:14px;font-weight:600;font-family:var(--font-mono);color:#60a5fa}
+.brx-card{margin-top:10px;background:linear-gradient(180deg,rgba(22,18,34,.95),rgba(9,11,19,.98));border:1px solid rgba(168,85,247,.18);border-radius:10px;padding:13px 15px}
+.brx-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.brx-kicker{font-size:8px;color:rgba(192,132,252,.75);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:5px}
+.brx-title{font-size:18px;font-weight:800;font-family:var(--font-mono);color:#d8b4fe}
+.brx-sub{font-size:10px;color:var(--text2);font-family:var(--font-mono);margin-top:4px;line-height:1.7}
+.brx-score{min-width:110px;text-align:right}
+.brx-score .n{font-size:34px;font-weight:800;font-family:var(--font-mono);color:#d8b4fe}
+.brx-score .s{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.brx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.brx-box{background:rgba(8,11,15,.42);border:1px solid rgba(168,85,247,.12);border-radius:8px;padding:10px 11px}
+.brx-l{font-size:8px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.6px}
+.brx-v{font-size:14px;font-weight:700;font-family:var(--font-mono);margin-top:4px}
+.brx-r{font-size:10px;color:var(--text2);font-family:var(--font-mono);line-height:1.8;white-space:pre-wrap}
 .meta-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:10px;margin-top:10px}
 .insight-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px}
 .insight-title{font-size:8px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px}
@@ -273,7 +286,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 .struct-score{font-size:12px;font-weight:700;font-family:var(--font-mono);white-space:nowrap}
 @media(max-width:980px){.opp-grid,.gate-strip{grid-template-columns:1fr 1fr}}
 @media(max-width:980px){.meta-grid,.thesis-grid,.replay-shell{grid-template-columns:1fr}.insight-kpis{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:820px){.scenario-grid,.shadow-strip,.conflict-grid,.opp-grid,.gate-strip{grid-template-columns:1fr}}
+@media(max-width:820px){.scenario-grid,.shadow-strip,.conflict-grid,.opp-grid,.gate-strip,.brx-grid{grid-template-columns:1fr}}
 
 /* LOG */
 .tab-row{display:flex;gap:2px;background:var(--bg3);padding:3px;border-radius:7px;margin-bottom:10px;overflow-x:auto}
@@ -611,6 +624,26 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
         <div class="pbox"><div class="pbox-l">CONTRATOS</div><div class="pbox-v" id="ky-c">—</div></div>
         <div class="pbox"><div class="pbox-l">CAPITAL ALOCADO</div><div class="pbox-v" id="ky-cap">—</div></div>
         <div class="pbox"><div class="pbox-l">PERDA MÁX</div><div class="pbox-v" id="ky-r">—</div></div>
+      </div>
+      <div class="brx-card">
+        <div class="brx-top">
+          <div>
+            <div class="brx-kicker">BRUXARIA 360 — CONSOLIDADOR FINAL</div>
+            <div class="brx-title" id="brx-action">Aguardando ritual</div>
+            <div class="brx-sub" id="brx-sub">Quando o scan terminar, esta camada mistura tudo: liquidez, regime, cenários, estrutura, risco e payoff.</div>
+          </div>
+          <div class="brx-score">
+            <div class="n" id="brx-score">—</div>
+            <div class="s" id="brx-score-s">score final 1-10</div>
+          </div>
+        </div>
+        <div class="brx-grid">
+          <div class="brx-box"><div class="brx-l">ESTRUTURA FINAL</div><div class="brx-v" id="brx-struct">—</div></div>
+          <div class="brx-box"><div class="brx-l">ALVO DO ATIVO</div><div class="brx-v" id="brx-asset-target">—</div></div>
+          <div class="brx-box"><div class="brx-l">ALVO DA OPÇÃO</div><div class="brx-v" id="brx-option-target">—</div></div>
+          <div class="brx-box"><div class="brx-l">STOP</div><div class="brx-v" id="brx-stop">—</div></div>
+        </div>
+        <div class="brx-r" id="brx-why">Sem consolidação ainda.</div>
       </div>
       <div class="meta-grid">
         <div class="insight-card" style="margin-top:0">
@@ -1371,12 +1404,11 @@ function buildQuickOpportunity(ticker) {
     putScore: clamp(Math.round(put), 0, 100)
   };
 }
-function compareStructures(ticker) {
+function compareStructures(ticker, baseScore = null) {
   const opp = buildQuickOpportunity(ticker);
   if (!opp) return null;
-  const d = mktData[ticker];
   const dv = opp.dv;
-  const base = currentDecision && currentDecision.asset === ticker ? currentDecision.avg : opp.setupScore;
+  const base = baseScore ?? (currentDecision && currentDecision.asset === ticker ? currentDecision.avg : opp.setupScore);
   const iv = dv.ivEst;
   const rows = [
     {
@@ -1923,6 +1955,75 @@ function buildNoTradePlan(direction, conflict, execution, invalidation, trap) {
 function buildMesaSummary(d, direction, avg, execution, regime, invalidation) {
   return `Mesa: ${dirLabel(direction)} em ${asset} com score ${avg}% e qualidade ${scoreLabel(execution.score)}.\nGatilho: ${invalidation[0].body}\nInvalidação: ${invalidation[1].body}\nRegime: ${regime.label}.`;
 }
+function witchTargetPrice(d, summary) {
+  const movePct = Math.max(Math.abs(numText((summary.direction === 'CALL' ? summary.scenarios[0] : summary.direction === 'PUT' ? summary.scenarios[2] : summary.scenarios[1])?.move)) / 100, d.atrPct / 100);
+  if (summary.direction === 'CALL') return Math.max(d.price * (1 + movePct), d.derived.sc);
+  if (summary.direction === 'PUT') return Math.min(d.price * (1 - movePct), d.derived.poc || d.price * 0.985);
+  return d.price;
+}
+function witchStopPrice(d, summary) {
+  if (summary.direction === 'CALL') return Math.min(d.derived.poc || d.price * 0.985, d.price * 0.992);
+  if (summary.direction === 'PUT') return Math.max(d.derived.sc, d.price * 1.012);
+  return d.price;
+}
+function buildWitchcraftVerdict(d, summary) {
+  const liquidity = buildLiquiditySnapshot(summary.asset);
+  const structure = compareStructures(summary.asset, summary.avg);
+  const rr = summary.option.stop > 0 ? summary.option.alvo1 / summary.option.stop : 0;
+  const chosenScenario = summary.direction === 'CALL' ? summary.scenarios[0] : summary.direction === 'PUT' ? summary.scenarios[2] : summary.scenarios[1];
+  let raw = 0;
+  raw += summary.avg * 0.18;
+  raw += summary.meta.score * 0.18;
+  raw += liquidity.overall * 0.17;
+  raw += summary.execution.score * 0.12;
+  raw += summary.conflict.alignment * 0.10;
+  raw += (structure?.best?.score || 40) * 0.12;
+  raw += (chosenScenario?.prob || 33) * 0.08;
+  raw += clamp(rr * 18, 0, 100) * 0.05;
+  if (!liquidity.pass) raw -= 22;
+  if (structure?.best?.name === 'Não Operar') raw -= 16;
+  if (summary.direction === 'WAIT') raw -= 12;
+  if (summary.trap.label !== 'SEM ARMADILHA CRÍTICA') raw -= 6;
+  if (summary.regime.label === 'COMPRESSÃO' && summary.direction !== 'WAIT') raw -= 4;
+  const score100 = clamp(Math.round(raw), 0, 100);
+  const score10 = clamp(Math.round(score100 / 10), 1, 10);
+  const blocked = !liquidity.pass || structure?.best?.name === 'Não Operar' || summary.direction === 'WAIT' || score10 <= 4;
+  const action = blocked
+    ? 'AGUARDAR'
+    : structure.best.name === 'Compra Seca'
+      ? `COMPRA ${summary.direction}`
+      : structure.best.name === 'Trava Vertical'
+        ? `${summary.direction === 'CALL' ? 'TRAVA DE ALTA' : 'TRAVA DE BAIXA'}`
+        : `COMPRA ${summary.direction} COM FINANCIAMENTO`;
+  const assetTarget = witchTargetPrice(d, summary);
+  const assetStop = witchStopPrice(d, summary);
+  const optionTarget = score10 >= 8 ? summary.option.alvo2 : summary.option.alvo1;
+  const optionStop = summary.option.stop;
+  const conviction = score10 >= 8 ? 'convicção alta' : score10 >= 6 ? 'convicção média' : score10 >= 4 ? 'convicção baixa' : 'sem convicção';
+  const reasons = [
+    `Liquidez ${liquidity.overall}% (${liquidity.pass ? 'executável' : 'travando execução'})`,
+    `Meta-confiança ${summary.meta.score}% com alinhamento interno ${summary.conflict.alignment}%`,
+    `Melhor estrutura: ${structure?.best?.name || 'indefinida'} (${structure?.best?.score || 0}%)`,
+    `Cenário dominante: ${chosenScenario?.name || 'base'} com ${chosenScenario?.prob || 0}%`,
+    `Regime ${summary.regime.label.toLowerCase()} e armadilha ${summary.trap.label.toLowerCase()}`
+  ];
+  return {
+    score100,
+    score10,
+    action,
+    blocked,
+    structure: structure?.best?.name || 'Indefinida',
+    assetTarget,
+    assetStop,
+    optionTarget,
+    optionStop,
+    conviction,
+    why: reasons.slice(0, 4).join('\n'),
+    subtitle: blocked
+      ? `Bruxaria travou a entrada. Melhor esperar gatilho mais limpo ou liquidez melhor.`
+      : `Bruxaria liberou ${action.toLowerCase()} com ${conviction}. Objetivo principal já está calibrado no ativo e na opção.`
+  };
+}
 function buildDecisionSummary(d, avg, direction, polA, dsDir, gmDir, dsScore, gmScore, clScore, v) {
   const dv = d.derived;
   const regime = buildRegime(d, macroObj, polA);
@@ -1943,6 +2044,20 @@ function buildDecisionSummary(d, avg, direction, polA, dsDir, gmDir, dsScore, gm
       : 0;
   const inverseEdge = -chosenEdge;
   const flatEdge = Number((scenarios[1].prob / 100 * 0.2).toFixed(2));
+  const liquidity = buildLiquiditySnapshot(asset);
+  const structure = compareStructures(asset, avg);
+  const witch = buildWitchcraftVerdict(d, {
+    asset,
+    avg,
+    direction,
+    meta,
+    execution,
+    conflict,
+    scenarios,
+    trap,
+    regime,
+    option: v
+  });
   return {
     ts: new Date().toLocaleTimeString('pt-BR'),
     asset,
@@ -1966,7 +2081,10 @@ function buildDecisionSummary(d, avg, direction, polA, dsDir, gmDir, dsScore, gm
     chosenEdge: Number(chosenEdge.toFixed(2)),
     inverseEdge: Number(inverseEdge.toFixed(2)),
     flatEdge,
-    option: v
+    option: v,
+    liquidity,
+    structure,
+    witch
   };
 }
 function paintText(id, text, color) {
@@ -1988,6 +2106,15 @@ function renderAdvancedPanels(summary) {
   paintText('meta-conf', `${summary.meta.score}%`, summary.meta.score >= 70 ? 'var(--green)' : summary.meta.score >= 55 ? 'var(--yellow)' : 'var(--red)');
   paintText('meta-conf-s', summary.meta.reason);
   paintText('mesaSummary', summary.mesa);
+  paintText('brx-action', summary.witch.action, summary.witch.blocked ? 'var(--yellow)' : summary.direction === 'CALL' ? 'var(--green)' : summary.direction === 'PUT' ? 'var(--red)' : 'var(--yellow)');
+  paintText('brx-sub', summary.witch.subtitle);
+  paintText('brx-score', `${summary.witch.score10}/10`, summary.witch.score10 >= 8 ? '#d8b4fe' : summary.witch.score10 >= 6 ? '#fbbf24' : '#f87171');
+  paintText('brx-score-s', `score final ${summary.witch.score100}%`);
+  paintText('brx-struct', summary.witch.structure, summary.witch.structure === 'Não Operar' ? 'var(--red)' : summary.witch.structure === 'Compra Seca' ? 'var(--green)' : 'var(--yellow)');
+  paintText('brx-asset-target', `R$ ${summary.witch.assetTarget.toFixed(2)}`, summary.direction === 'PUT' ? 'var(--red)' : 'var(--green)');
+  paintText('brx-option-target', `R$ ${summary.witch.optionTarget.toFixed(2)}`, 'var(--petro)');
+  paintText('brx-stop', `Ativo R$ ${summary.witch.assetStop.toFixed(2)} | Opção R$ ${summary.witch.optionStop.toFixed(2)}`, 'var(--yellow)');
+  paintText('brx-why', summary.witch.why);
   paintText('primaryBadge', summary.primary.badge);
   paintText('primaryLabel', summary.primary.label);
   paintText('primaryThesis', summary.primary.text);
@@ -2358,6 +2485,7 @@ function applyVerdict(avg, isCall, isPut, noOp, isStrong, d, v, summary) {
   histArr.push({ ts: new Date().toLocaleTimeString('pt-BR'), asset, vered: isCall?'CALL':isPut?'PUT':'—', strike: v.strikeVal.toFixed(2), premio: v.premioVal.toFixed(2), conts: v.conts, prob: avg, rr: rrOpt });
   updateHist();
   renderAdvancedPanels(summary);
+  addLog(summary.witch.blocked ? 'warn' : 'ok', `[BRUXARIA] ${summary.witch.score10}/10 | ${summary.witch.action} | alvo ativo R$${summary.witch.assetTarget.toFixed(2)} | stop opção R$${summary.witch.optionStop.toFixed(2)}`);
   registerShadowVerdict(summary);
   storeReplay(summary);
   return summary;
