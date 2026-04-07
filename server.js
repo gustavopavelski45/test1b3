@@ -8,6 +8,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+const DEFAULT_CLAUDE_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+
 function pickApiKey(bodyKey, envKey) {
   return (bodyKey || envKey || "").trim();
 }
@@ -51,8 +53,12 @@ function buildErrorMessage(data, fallback) {
 app.post("/api/claude", async (req, res) => {
   try {
     const apiKey = pickApiKey(req.body?.apiKey, process.env.CLAUDE_API_KEY);
+    const model = (req.body?.model || DEFAULT_CLAUDE_MODEL || "").trim();
     if (!apiKey) {
       return res.status(400).json({ error: "CLAUDE_API_KEY ausente." });
+    }
+    if (!model) {
+      return res.status(400).json({ error: "Modelo Claude ausente." });
     }
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -63,7 +69,7 @@ app.post("/api/claude", async (req, res) => {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model,
         max_tokens: Number(req.body?.max_tokens) || 500,
         messages: [{ role: "user", content: req.body?.prompt || "" }]
       })
@@ -71,10 +77,10 @@ app.post("/api/claude", async (req, res) => {
 
     const data = await r.json();
     if (!r.ok) {
-      return res.status(r.status).json({ error: buildErrorMessage(data, `Claude ${r.status}`), raw: data });
+      return res.status(r.status).json({ error: buildErrorMessage(data, `Claude ${r.status}`), model, raw: data });
     }
 
-    res.json({ text: extractAnthropicText(data), raw: data });
+    res.json({ text: extractAnthropicText(data), model, raw: data });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
