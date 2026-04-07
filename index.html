@@ -3,46 +3,1545 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Council of Algos</title>
+<title>Council of Algos v6</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-body{font-family:Arial;padding:20px;background:#111;color:#fff}
-input,button{padding:10px;margin:5px;width:300px}
-#log{background:#000;padding:15px;margin-top:20px;white-space:pre-wrap}
+:root{
+  --bg:#080b0f;--bg2:#0e1318;--bg3:#141a22;--bg4:#1a222c;
+  --border:#232d3a;--border2:#2e3d50;--border3:#3a4d64;
+  --text:#dde4ee;--text2:#8494a8;--text3:#4a5a6e;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+  --blue:#3b82f6;--purple:#a855f7;--petro:#0ea5e9;--vale:#10b981;
+  --font-mono:'JetBrains Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;overflow-x:hidden}
+
+.overlay{position:fixed;inset:0;background:rgba(8,11,15,.96);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
+.overlay.gone{opacity:0;pointer-events:none}
+.ov-spin{width:40px;height:40px;border-radius:50%;border:3px solid rgba(59,130,246,.15);border-top-color:#3b82f6;animation:sp .8s linear infinite}
+.ov-title{font-size:16px;font-weight:600;font-family:var(--font-mono);color:var(--text)}
+.ov-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.ov-steps{min-width:380px;display:flex;flex-direction:column;gap:8px}
+.ovs{display:flex;align-items:center;gap:10px;font-size:10px;font-family:var(--font-mono)}
+.ovs.wait{color:var(--text3)}.ovs.run{color:var(--blue)}.ovs.ok{color:var(--green)}.ovs.err{color:var(--red)}
+.ovs-ico{width:18px;text-align:center;flex-shrink:0}
+.ms{width:12px;height:12px;border-radius:50%;border:2px solid rgba(59,130,246,.2);border-top-color:#3b82f6;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-ico{width:28px;height:28px;background:linear-gradient(135deg,#2563eb,#8b5cf6);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;font-family:var(--font-mono)}
+.logo-t{font-size:13px;font-weight:600}
+.logo-s{font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.8px;margin-top:1px}
+.hdr-keys{display:flex;gap:5px;flex-wrap:wrap}
+.kb{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 9px;display:flex;align-items:center;gap:5px}
+.kb label{font-size:8px;font-family:var(--font-mono);font-weight:700;letter-spacing:.5px;white-space:nowrap}
+.kb.gm label{color:#c084fc}.kb.cl label{color:#fbbf24}
+.kb input{background:transparent;border:none;color:var(--text);font-family:var(--font-mono);font-size:10px;width:130px;outline:none}
+.kb input::placeholder{color:var(--text3)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.live{display:flex;align-items:center;gap:5px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);padding:4px 9px;border-radius:20px;font-size:10px;font-family:var(--font-mono);color:var(--green)}
+.ld{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.clk{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+
+.main{padding:12px;display:grid;gap:12px;max-width:1600px;margin:0 auto}
+
+/* SOURCE BADGE */
+.src-badge{display:inline-block;font-size:8px;font-family:var(--font-mono);padding:1px 6px;border-radius:3px;font-weight:700;margin-left:6px}
+.src-gemini{background:rgba(139,92,246,.15);color:#c084fc}
+.src-claude{background:rgba(217,119,6,.15);color:#fbbf24}
+.src-yahoo{background:rgba(34,197,94,.15);color:#4ade80}
+.src-brapi{background:rgba(14,165,233,.15);color:#38bdf8}
+
+/* MACRO */
+.macro-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.macro-top{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.macro-title{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px}
+.mst{font-size:9px;font-family:var(--font-mono);padding:3px 9px;border-radius:20px}
+.mst-load{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.15);display:flex;align-items:center;gap:5px}
+.mst-ok{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.mst-err{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.15)}
+.macro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:1px;background:var(--border)}
+.mc{background:var(--bg2);padding:9px 12px}
+.mc-l{font-size:7px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:3px}
+.mc-v{font-size:14px;font-weight:700;font-family:var(--font-mono)}
+.mc-c{font-size:9px;font-family:var(--font-mono);margin-top:1px}
+.up{color:var(--green)}.down{color:var(--red)}.neut{color:var(--text3)}
+.lv{color:var(--text3)!important;animation:fade .8s ease infinite alternate}
+@keyframes fade{from{opacity:.3}to{opacity:.8}}
+.macro-narr{padding:9px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--text2);font-family:var(--font-mono);line-height:1.65}
+.pol-badge{display:inline-block;font-size:8px;font-family:var(--font-mono);padding:2px 7px;border-radius:4px;font-weight:700;margin-right:6px}
+.pol-ok{background:rgba(34,197,94,.12);color:var(--green)}.pol-warn{background:rgba(245,158,11,.12);color:var(--yellow)}.pol-bad{background:rgba(239,68,68,.12);color:var(--red)}
+
+/* ASSETS */
+.asset-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.acard{background:var(--bg2);border:2px solid var(--border);border-radius:11px;padding:14px 16px;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
+.acard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s}
+.acard.petr::before{background:var(--petro)}.acard.vale::before{background:var(--vale)}
+.acard.active{border-color:var(--border3)}.acard.active::before{opacity:1}
+.a-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.aname{font-size:20px;font-weight:700;font-family:var(--font-mono)}
+.aname.petr{color:var(--petro)}.aname.vale{color:var(--vale)}
+.adesc{font-size:9px;color:var(--text3);margin-top:1px}
+.ap{text-align:right}
+.ap-val{font-size:24px;font-weight:700;font-family:var(--font-mono)}
+.ap-chg{font-size:11px;font-family:var(--font-mono);margin-top:1px}
+.a-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;border-top:1px solid var(--border);padding-top:10px}
+.akpi-l{font-size:7px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.8px}
+.akpi-v{font-size:12px;font-weight:600;font-family:var(--font-mono);margin-top:2px}
+.a-st{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:9px;font-family:var(--font-mono);padding:3px 9px;border-radius:20px}
+.ast-ok{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.ast-load{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.15)}
+.ast-err{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.15)}
+
+/* DERIVED */
+.derived{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.dp-title{font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.dp-title span{font-weight:700}
+.dp-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.dp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin-bottom:12px}
+.dpf{background:var(--bg3);border:1px solid rgba(59,130,246,.12);border-radius:7px;padding:9px 11px;position:relative}
+.dpf.ai-f{border-color:rgba(139,92,246,.2)}
+.dpb{position:absolute;top:4px;right:5px;font-size:7px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px;font-weight:700}
+.b-r{background:rgba(34,197,94,.12);color:#4ade80}
+.b-c{background:rgba(59,130,246,.12);color:#60a5fa}
+.b-ai{background:rgba(139,92,246,.12);color:#c084fc}
+.dp-l{font-size:8px;color:rgba(96,165,250,.7);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:3px}
+.dpf.ai-f .dp-l{color:rgba(192,132,252,.7)}
+.dp-v{font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text)}
+.dp-s{font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:1px}
+
+.cap-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.cap-lbl{font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap}
+.cap-sel{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);font-family:var(--font-mono);font-size:10px;outline:none}
+.cap-sel:focus{border-color:var(--border3)}
+.cap-sel option{background:var(--bg3)}
+
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 18px;border-radius:7px;border:none;cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.4px;transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-scan{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:13px;padding:10px 24px}
+.btn-scan:hover{filter:brightness(1.1)}.btn-scan:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.btn-sec{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-sec:hover{border-color:var(--border3);color:var(--text)}
+.btn-stop{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+
+/* COUNCIL */
+.council-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:860px){.council-grid{grid-template-columns:1fr}}
+.algo-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.algo-hdr{padding:10px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.algo-info{display:flex;align-items:center;gap:8px}
+.av{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-mono);flex-shrink:0}
+.av-ds{background:rgba(37,99,235,.15);color:#60a5fa;border:1px solid rgba(37,99,235,.2)}
+.av-gm{background:rgba(139,92,246,.15);color:#c084fc;border:1px solid rgba(139,92,246,.2)}
+.av-cl{background:rgba(217,119,6,.15);color:#fbbf24;border:1px solid rgba(217,119,6,.2)}
+.algo-name{font-size:11px;font-weight:600}
+.algo-role{font-size:8px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-top:1px}
+.ast{font-size:9px;font-family:var(--font-mono);padding:2px 7px;border-radius:20px;flex-shrink:0}
+.st-idle{background:rgba(74,90,110,.15);color:var(--text3)}
+.st-run{background:rgba(59,130,246,.12);color:var(--blue)}
+.st-done{background:rgba(34,197,94,.12);color:var(--green)}
+.st-err{background:rgba(239,68,68,.12);color:var(--red)}
+.algo-body{padding:11px 13px;flex:1;min-height:200px;overflow-y:auto}
+.algo-body::-webkit-scrollbar{width:3px}
+.algo-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.algo-out{font-family:var(--font-mono);font-size:10px;line-height:1.75;color:var(--text2);white-space:pre-wrap;word-break:break-word}
+.prob-row{padding:9px 13px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.prob-lbl{font-size:8px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap}
+.prob-bar{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.prob-fill{height:100%;border-radius:2px;transition:width .6s}
+.prob-num{font-size:11px;font-family:var(--font-mono);font-weight:600;min-width:32px;text-align:right}
+
+/* VERDICT */
+.verdict{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.verdict-hdr{padding:11px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.verdict-title{font-size:12px;font-weight:600}
+.vbadge{font-size:9px;font-family:var(--font-mono);padding:3px 9px;border-radius:20px}
+.vb-wait{background:rgba(74,90,110,.15);color:var(--text3)}
+.vb-call{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.vb-put{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.vb-skip{background:rgba(245,158,11,.1);color:var(--yellow);border:1px solid rgba(245,158,11,.15)}
+.verdict-body{padding:13px 15px}
+.dir-sig{border-radius:9px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border:1px solid var(--border)}
+.dir-sig.call{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.18)}
+.dir-sig.put{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.18)}
+.dir-sig.wait{background:var(--bg3)}
+.dir-type{font-size:26px;font-weight:700;font-family:var(--font-mono)}
+.dir-sig.call .dir-type{color:var(--green)}.dir-sig.put .dir-type{color:var(--red)}.dir-sig.wait .dir-type{color:var(--text3)}
+.dir-sub{font-size:10px;color:var(--text2);font-family:var(--font-mono);margin-top:3px}
+.dir-r{text-align:right}
+.dir-asset{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.dir-conf{font-size:12px;font-weight:600;font-family:var(--font-mono);margin-top:2px}
+.chi{color:var(--green)}.cmd{color:var(--yellow)}.clo{color:var(--text3)}
+.mstrip{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:10px}
+@media(max-width:650px){.mstrip{grid-template-columns:repeat(3,1fr)}}
+.mbox{background:var(--bg3);border-radius:6px;padding:9px 11px}
+.mbox-l{font-size:8px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:3px}
+.mbox-v{font-size:15px;font-weight:600;font-family:var(--font-mono)}
+.opt-rec{background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border)}
+.opt-rec-t{font-size:8px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:9px}
+.opt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+@media(max-width:650px){.opt-grid{grid-template-columns:repeat(2,1fr)}}
+.of-l{font-size:8px;color:var(--text3);font-family:var(--font-mono)}
+.of-v{font-size:14px;font-weight:600;font-family:var(--font-mono);margin-top:2px}
+.of-s{font-size:8px;color:var(--text3);font-family:var(--font-mono);margin-top:1px}
+.greeks{display:flex;gap:12px;flex-wrap:wrap;padding:9px 11px;background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.1);border-radius:6px;margin-top:9px}
+.g-item{display:flex;flex-direction:column;gap:1px}
+.g-l{font-size:7px;color:rgba(192,132,252,.6);font-family:var(--font-mono);letter-spacing:.5px}
+.g-v{font-size:12px;font-weight:600;font-family:var(--font-mono);color:#c084fc}
+.pos-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+@media(max-width:650px){.pos-strip{grid-template-columns:repeat(2,1fr)}}
+.pbox{background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.1);border-radius:6px;padding:9px 11px}
+.pbox-l{font-size:8px;color:rgba(96,165,250,.6);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:3px}
+.pbox-v{font-size:14px;font-weight:600;font-family:var(--font-mono);color:#60a5fa}
+
+/* LOG */
+.tab-row{display:flex;gap:2px;background:var(--bg3);padding:3px;border-radius:7px;margin-bottom:10px;overflow-x:auto}
+.tab-btn{padding:5px 13px;border-radius:5px;border:none;cursor:pointer;font-family:var(--font-mono);font-size:9px;font-weight:600;background:transparent;color:var(--text3);transition:all .15s;white-space:nowrap}
+.tab-btn.active{background:var(--bg2);color:var(--text);border:1px solid var(--border)}
+.tab-c{display:none}.tab-c.active{display:block}
+.log-wrap{background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.log-hdr{background:var(--bg2);padding:7px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.log-t{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1px}
+.log-body{height:130px;overflow-y:auto;padding:7px 11px;font-family:var(--font-mono);font-size:9px;line-height:2}
+.log-body::-webkit-scrollbar{width:3px}.log-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.ll .ts{margin-right:6px;color:var(--text3)}
+.ll.info .msg{color:var(--text2)}.ll.ok .msg{color:var(--green)}.ll.warn .msg{color:var(--yellow)}.ll.err .msg{color:var(--red)}.ll.sys .msg{color:var(--blue)}
+.hist-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.hist-hdr{padding:8px 13px;border-bottom:1px solid var(--border);font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1px}
+.htable{width:100%;border-collapse:collapse}
+.htable th{font-size:8px;font-family:var(--font-mono);color:var(--text3);padding:6px 11px;text-align:left;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.htable td{font-size:10px;font-family:var(--font-mono);padding:7px 11px;border-bottom:1px solid rgba(35,45,58,.4);color:var(--text2)}
+.htable tr:last-child td{border-bottom:none}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:8px;font-weight:700}
+.tg-c{background:rgba(34,197,94,.15);color:var(--green)}.tg-p{background:rgba(239,68,68,.15);color:var(--red)}.tg-w{background:rgba(74,90,110,.15);color:var(--text3)}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;color:var(--text3);text-align:center}
+.eico{font-size:22px;opacity:.3}.etxt{font-size:9px;font-family:var(--font-mono)}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(59,130,246,.15);border-top-color:var(--blue);animation:sp .7s linear infinite;display:inline-block}
+.cur{display:inline-block;width:5px;height:10px;background:currentColor;animation:blink 1s infinite;vertical-align:middle;margin-left:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.sec-lbl{font-size:8px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.cfg-mask{position:fixed;inset:0;background:rgba(3,7,18,.88);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
+.cfg-mask.hidden{display:none}
+.cfg-card{width:min(760px,96vw);background:linear-gradient(180deg,rgba(10,20,40,.98),rgba(6,14,28,.98));border:1px solid var(--border);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.45);padding:24px}
+.cfg-title{font-size:22px;font-weight:800;letter-spacing:.5px}
+.cfg-sub{margin-top:6px;color:var(--text2);font-size:13px;line-height:1.45}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.cfg-field{display:flex;flex-direction:column;gap:7px}
+.cfg-field label{font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.2px}
+.cfg-field input{height:42px;border-radius:12px;border:1px solid var(--border);background:#07111f;color:var(--text);padding:0 12px;font-size:13px;outline:none}
+.cfg-field input:focus{border-color:rgba(59,130,246,.7);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.cfg-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.cfg-note{margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);color:#fcd34d;font-size:12px;line-height:1.45}
+.cfg-err{margin-top:12px;color:#fca5a5;font-size:12px;display:none}
+.cfg-err.show{display:block}
+@media (max-width:760px){.cfg-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
-<h2>Council of Algos</h2>
 
-<input id="ticker" value="PETR4"><br>
-<button onclick="scan()">SCAN</button>
+<div class="overlay" id="overlay">
+  <div class="ov-spin"></div>
+  <div class="ov-title">Council of Algos v6</div>
+  <div class="ov-sub" id="ov-sub">Inicializando...</div>
+  <div class="ov-steps">
+    <div class="ovs wait" id="os-q"><span class="ovs-ico">◯</span>Cotações B3 (múltiplas fontes)</div>
+    <div class="ovs wait" id="os-m"><span class="ovs-ico">◯</span>Macro global via Gemini/Claude (proxy backend)</div>
+    <div class="ovs wait" id="os-p"><span class="ovs-ico">◯</span>Risco político via Claude (proxy backend)</div>
+    <div class="ovs wait" id="os-c"><span class="ovs-ico">◯</span>Calculando ATR, IV, Greeks, contratos</div>
+  </div>
+</div>
 
-<div id="log"></div>
+
+<div class="cfg-mask" id="cfgMask">
+  <div class="cfg-card">
+    <div class="cfg-title">Configuração inicial</div>
+    <div class="cfg-sub">Antes de carregar o scanner, preencha as credenciais e os proxies. Assim o sistema só inicia quando a base mínima estiver configurada.</div>
+    <div class="cfg-grid">
+      <div class="cfg-field">
+        <label>BRAPI TOKEN</label>
+        <input type="password" id="cfg-brapi" placeholder="token da brapi.dev">
+      </div>
+      <div class="cfg-field">
+        <label>DEEPSEEK API KEY (OPCIONAL)</label>
+        <input type="password" id="cfg-ds-key" placeholder="sk-...">
+      </div>
+      <div class="cfg-field">
+        <label>DEEPSEEK PROXY URL (OPCIONAL)</label>
+        <input type="text" id="cfg-ds-url" placeholder="https://seu-backend.up.railway.app/api/deepseek">
+      </div>
+      <div class="cfg-field">
+        <label>CLAUDE API KEY</label>
+        <input type="password" id="cfg-cl-key" placeholder="sk-ant-...">
+      </div>
+      <div class="cfg-field">
+        <label>CLAUDE PROXY URL</label>
+        <input type="text" id="cfg-cl-url" placeholder="https://seu-backend.up.railway.app/api/claude">
+      </div>
+      <div class="cfg-field">
+        <label>GEMINI API KEY (OPCIONAL)</label>
+        <input type="password" id="cfg-gm-key" placeholder="AIza...">
+      </div>
+      <div class="cfg-field">
+        <label>GEMINI PROXY URL (OPCIONAL)</label>
+        <input type="text" id="cfg-gm-url" placeholder="https://seu-backend.up.railway.app/api/gemini">
+      </div>
+    </div>
+    <div class="cfg-note">Se você abrir este HTML direto no navegador, <b>/api/claude</b>, <b>/api/gemini</b> e <b>/api/deepseek</b> não existem. Use a URL completa do backend, por exemplo: <b>https://seu-app.up.railway.app/api/claude</b>. Mínimo recomendado: BRAPI + Claude Key + Claude URL. DeepSeek e Gemini são opcionais.</div>
+    <div class="cfg-err" id="cfgErr"></div>
+    <div class="cfg-row">
+      <button class="btn btn-scan" onclick="saveConfigAndBoot()">SALVAR E INICIAR</button>
+      <button class="btn btn-sec" onclick="prefillDefaultProxies()">USAR PROXIES PADRÃO</button>
+      <button class="btn btn-sec" onclick="openConfig(true)">EDITAR DEPOIS</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-ico">CA</div>
+    <div><div class="logo-t">Council of Algos</div><div class="logo-s">FULL-AUTO · OPTIONS SCANNER · PETR4 / VALE3</div></div>
+  </div>
+  <div class="hdr-keys">
+    <div class="kb"><label>BRAPI</label><input type="password" id="key-brapi" placeholder="token brapi.dev"/></div>
+    <div class="kb"><label>DEEPSEEK KEY</label><input type="password" id="key-ds" placeholder="sk-..."/></div>
+    <div class="kb"><label>DEEPSEEK URL</label><input type="text" id="url-ds" placeholder="https://seu-backend.up.railway.app/api/deepseek"/></div>
+    <div class="kb gm"><label>GEMINI KEY</label><input type="password" id="key-gm" placeholder="AIza..."/></div>
+    <div class="kb"><label>GEMINI URL</label><input type="text" id="url-gm" placeholder="https://seu-backend.up.railway.app/api/gemini"/></div>
+    <div class="kb cl"><label>CLAUDE KEY</label><input type="password" id="key-cl" placeholder="sk-ant-..."/></div>
+    <div class="kb"><label>CLAUDE URL</label><input type="text" id="url-cl" placeholder="https://seu-backend.up.railway.app/api/claude"/></div>
+  </div>
+  <div class="hdr-r">
+    <div class="live"><div class="ld"></div>LIVE</div>
+    <div class="clk" id="clk">--:--:--</div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- MACRO -->
+  <div class="macro-wrap">
+    <div class="macro-top">
+      <div>
+        <div class="macro-title">MACRO GLOBAL — DADOS EM TEMPO REAL</div>
+        <div id="macro-src" style="font-size:8px;color:var(--text3);font-family:var(--font-mono);margin-top:2px">fonte: inicializando...</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span id="pol-badge-hdr"></span>
+        <div class="mst mst-load" id="mst"><span class="ms"></span>&nbsp;Carregando...</div>
+      </div>
+    </div>
+    <div class="macro-grid">
+      <div class="mc"><div class="mc-l">BRENT</div><div class="mc-v lv" id="mv-brent">—</div><div class="mc-c" id="mc-brent">—</div></div>
+      <div class="mc"><div class="mc-l">MINÉRIO DALIAN</div><div class="mc-v lv" id="mv-iron">—</div><div class="mc-c" id="mc-iron">—</div></div>
+      <div class="mc"><div class="mc-l">USD/BRL</div><div class="mc-v lv" id="mv-usd">—</div><div class="mc-c" id="mc-usd">—</div></div>
+      <div class="mc"><div class="mc-l">DXY</div><div class="mc-v lv" id="mv-dxy">—</div><div class="mc-c" id="mc-dxy">—</div></div>
+      <div class="mc"><div class="mc-l">VIX</div><div class="mc-v lv" id="mv-vix">—</div><div class="mc-c" id="mc-vix">—</div></div>
+      <div class="mc"><div class="mc-l">PBR ADR NY</div><div class="mc-v lv" id="mv-pbr">—</div><div class="mc-c" id="mc-pbr">—</div></div>
+      <div class="mc"><div class="mc-l">VALE ADR NY</div><div class="mc-v lv" id="mv-vadr">—</div><div class="mc-c" id="mc-vadr">—</div></div>
+      <div class="mc"><div class="mc-l">SELIC / DI FUT.</div><div class="mc-v lv" id="mv-selic">—</div><div class="mc-c" id="mc-selic">—</div></div>
+      <div class="mc"><div class="mc-l">PETR4</div><div class="mc-v lv" id="mv-p4">—</div><div class="mc-c" id="mc-p4">—</div></div>
+      <div class="mc"><div class="mc-l">VALE3</div><div class="mc-v lv" id="mv-v3">—</div><div class="mc-c" id="mc-v3">—</div></div>
+      <div class="mc"><div class="mc-l">IBOV</div><div class="mc-v lv" id="mv-ibov">—</div><div class="mc-c" id="mc-ibov">—</div></div>
+      <div class="mc"><div class="mc-l">ATUALIZADO</div><div class="mc-v" id="mv-upd" style="font-size:10px;color:var(--text3)">—</div><div class="mc-c neut" id="mv-upd-src">IA</div></div>
+    </div>
+    <div class="macro-narr" id="macro-narr" style="display:none"></div>
+  </div>
+
+  <!-- ASSETS -->
+  <div class="asset-row">
+    <div class="acard petr active" id="card-PETR4" onclick="selAsset('PETR4')">
+      <div class="a-top">
+        <div><div class="aname petr">PETR4</div><div class="adesc">Petrobras PN · Energia · B3</div></div>
+        <div class="ap"><div class="ap-val" id="a-p4-price">—</div><div class="ap-chg neut" id="a-p4-chg">—</div></div>
+      </div>
+      <div class="a-kpis">
+        <div><div class="akpi-l">ATR 14</div><div class="akpi-v" id="a-p4-atr">—</div></div>
+        <div><div class="akpi-l">VOL.REL</div><div class="akpi-v" id="a-p4-vr">—</div></div>
+        <div><div class="akpi-l">IV EST.</div><div class="akpi-v" id="a-p4-iv">—</div></div>
+        <div><div class="akpi-l">52W HIGH</div><div class="akpi-v" id="a-p4-52h">—</div></div>
+        <div><div class="akpi-l">52W LOW</div><div class="akpi-v" id="a-p4-52l">—</div></div>
+      </div>
+      <div class="a-st ast-load" id="a-p4-st"><span class="spin"></span> Carregando...</div>
+    </div>
+    <div class="acard vale" id="card-VALE3" onclick="selAsset('VALE3')">
+      <div class="a-top">
+        <div><div class="aname vale">VALE3</div><div class="adesc">Vale ON · Mineração · B3</div></div>
+        <div class="ap"><div class="ap-val" id="a-v3-price">—</div><div class="ap-chg neut" id="a-v3-chg">—</div></div>
+      </div>
+      <div class="a-kpis">
+        <div><div class="akpi-l">ATR 14</div><div class="akpi-v" id="a-v3-atr">—</div></div>
+        <div><div class="akpi-l">VOL.REL</div><div class="akpi-v" id="a-v3-vr">—</div></div>
+        <div><div class="akpi-l">IV EST.</div><div class="akpi-v" id="a-v3-iv">—</div></div>
+        <div><div class="akpi-l">52W HIGH</div><div class="akpi-v" id="a-v3-52h">—</div></div>
+        <div><div class="akpi-l">52W LOW</div><div class="akpi-v" id="a-v3-52l">—</div></div>
+      </div>
+      <div class="a-st ast-load" id="a-v3-st"><span class="spin"></span> Carregando...</div>
+    </div>
+  </div>
+
+  <!-- DERIVED -->
+  <div class="derived">
+    <div class="dp-title">PARÂMETROS CALCULADOS — <span id="sel-lbl" style="color:var(--petro)">PETR4</span></div>
+    <div class="dp-grid">
+      <div class="dpf"><div class="dpb b-r">REAL</div><div class="dp-l">PREÇO ATUAL</div><div class="dp-v" id="dp-price">—</div><div class="dp-s">Cotação B3</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">ATR 14 (Wilder)</div><div class="dp-v" id="dp-atr">—</div><div class="dp-s">True Range 14d</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">IV ANUALIZADA</div><div class="dp-v" id="dp-iv">—</div><div class="dp-s">ATR% × √252/14</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">POC ESTIMADO</div><div class="dp-v" id="dp-poc">—</div><div class="dp-s">Média pond. vol. 20d</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">STRIKE CALL</div><div class="dp-v" id="dp-sc" style="color:var(--green)">—</div><div class="dp-s">ATM+1% | máx liq.</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">STRIKE PUT</div><div class="dp-v" id="dp-sp" style="color:var(--red)">—</div><div class="dp-s">ATM-1% | máx liq.</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">PRÊMIO (BS)</div><div class="dp-v" id="dp-pm">—</div><div class="dp-s">Black-Scholes</div></div>
+      <div class="dpf"><div class="dpb b-r">AUTO</div><div class="dp-l">DTE PRÓX. VENC.</div><div class="dp-v" id="dp-dte">—</div><div class="dp-s" id="dp-dte-s">—</div></div>
+      <div class="dpf"><div class="dpb b-r">REAL</div><div class="dp-l">VOLUME RELATIVO</div><div class="dp-v" id="dp-vr">—</div><div class="dp-s">vs média 3M</div></div>
+      <div class="dpf ai-f"><div class="dpb b-ai">AI</div><div class="dp-l">RISCO POLÍTICO</div><div class="dp-v" id="dp-pol">—</div><div class="dp-s" id="dp-pol-s">Claude avalia</div></div>
+      <div class="dpf ai-f"><div class="dpb b-ai">AI</div><div class="dp-l">SENTIMENTO MACRO</div><div class="dp-v" id="dp-sent">—</div><div class="dp-s" id="dp-sent-s">IA avalia</div></div>
+      <div class="dpf"><div class="dpb b-c">CALC</div><div class="dp-l">CONTRATOS (KELLY)</div><div class="dp-v" id="dp-cont" style="color:#60a5fa">—</div><div class="dp-s" id="dp-cont-s">18% capital</div></div>
+    </div>
+    <div class="cap-row">
+      <span class="cap-lbl">CAPITAL</span>
+      <select class="cap-sel" id="f-capital" onchange="updateDerived()">
+        <option value="3000">R$ 3.000</option>
+        <option value="5000" selected>R$ 5.000</option>
+        <option value="10000">R$ 10.000</option>
+        <option value="15000">R$ 15.000</option>
+        <option value="20000">R$ 20.000</option>
+        <option value="30000">R$ 30.000</option>
+        <option value="50000">R$ 50.000</option>
+      </select>
+      <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono)">← único input manual. Tudo mais é calculado pelas IAs automaticamente.</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-scan" id="scanBtn" onclick="runScan()"><span id="scanIco">▶</span> EXECUTAR COUNCIL SCAN</button>
+      <button class="btn btn-sec" onclick="bootAll()">⟳ RECARREGAR</button>
+      <button class="btn btn-sec" onclick="openConfig(true)">⚙ CONFIGURAR APIs</button>
+      <button class="btn btn-stop" id="stopBtn" style="display:none" onclick="stopped=true">■ PARAR</button>
+    </div>
+  </div>
+
+  <!-- COUNCIL -->
+  <div>
+    <div class="sec-lbl">COUNCIL OF ALGOS — CLAUDE (3 PERSONAS) + GEMINI (FALLBACK)</div>
+    <div class="council-grid">
+      <div class="algo-card">
+        <div class="algo-hdr"><div class="algo-info"><div class="av av-ds">DS</div><div><div class="algo-name">DeepSeek / Claude Quant</div><div class="algo-role">QUANT · ORDER FLOW · TÉCNICO</div></div></div><div class="ast st-idle" id="st-ds">IDLE</div></div>
+        <div class="algo-body"><div class="algo-out" id="out-ds"><div class="empty"><div class="eico">📊</div><div class="etxt">Análise quant aguardando...</div></div></div></div>
+        <div class="prob-row"><div class="prob-lbl">QUANT</div><div class="prob-bar"><div class="prob-fill" id="pb-ds" style="width:0%;background:#60a5fa"></div></div><div class="prob-num" id="pv-ds" style="color:#60a5fa">—</div></div>
+      </div>
+      <div class="algo-card">
+        <div class="algo-hdr"><div class="algo-info"><div class="av av-gm">GM</div><div><div class="algo-name">Gemini / Claude Macro</div><div class="algo-role">MACRO · CORRELAÇÕES · GLOBAL</div></div></div><div class="ast st-idle" id="st-gm">IDLE</div></div>
+        <div class="algo-body"><div class="algo-out" id="out-gm"><div class="empty"><div class="eico">🌍</div><div class="etxt">Análise macro aguardando...</div></div></div></div>
+        <div class="prob-row"><div class="prob-lbl">MACRO</div><div class="prob-bar"><div class="prob-fill" id="pb-gm" style="width:0%;background:#c084fc"></div></div><div class="prob-num" id="pv-gm" style="color:#c084fc">—</div></div>
+      </div>
+      <div class="algo-card">
+        <div class="algo-hdr"><div class="algo-info"><div class="av av-cl">CL</div><div><div class="algo-name">Claude</div><div class="algo-role">RISCO · OPÇÕES · GREEKS · KELLY</div></div></div><div class="ast st-idle" id="st-cl">IDLE</div></div>
+        <div class="algo-body"><div class="algo-out" id="out-cl"><div class="empty"><div class="eico">🎯</div><div class="etxt">Análise de opções aguardando...</div></div></div></div>
+        <div class="prob-row"><div class="prob-lbl">RISK</div><div class="prob-bar"><div class="prob-fill" id="pb-cl" style="width:0%;background:#fbbf24"></div></div><div class="prob-num" id="pv-cl" style="color:#fbbf24">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict">
+    <div class="verdict-hdr"><div class="verdict-title">⚖️ VEREDITO — DIREÇÃO + OPÇÃO IDEAL (COMPRA A SECO)</div><div class="vbadge vb-wait" id="vbadge">AGUARDANDO</div></div>
+    <div class="verdict-body">
+      <div class="dir-sig wait" id="dirSig">
+        <div><div class="dir-type" id="dirType">— AGUARDANDO —</div><div class="dir-sub" id="dirSub">Execute o scan para obter direção e opção recomendada</div></div>
+        <div class="dir-r"><div class="dir-asset" id="dirAsset">PETR4 / VALE3</div><div class="dir-conf clo" id="dirConf">Confiança: —</div></div>
+      </div>
+      <div class="mstrip">
+        <div class="mbox"><div class="mbox-l">CONFLUÊNCIA</div><div class="mbox-v" id="vv-conf" style="color:var(--text3)">—</div></div>
+        <div class="mbox"><div class="mbox-l">PROB. GERAL</div><div class="mbox-v" id="vv-prob" style="color:var(--text3)">—</div></div>
+        <div class="mbox"><div class="mbox-l">R/R OPÇÃO</div><div class="mbox-v" id="vv-rr" style="color:var(--text3)">—</div></div>
+        <div class="mbox"><div class="mbox-l">IV ATUAL</div><div class="mbox-v" id="vv-iv" style="color:var(--text3)">—</div></div>
+        <div class="mbox"><div class="mbox-l">DTE</div><div class="mbox-v" id="vv-dte" style="color:var(--text3)">—</div></div>
+      </div>
+      <div class="opt-rec">
+        <div class="opt-rec-t">OPÇÃO RECOMENDADA — MAIOR LIQUIDEZ · STRIKE IDEAL</div>
+        <div class="opt-grid">
+          <div><div class="of-l">TIPO</div><div class="of-v" id="or-tipo" style="color:var(--text3)">—</div><div class="of-s">Compra a seco</div></div>
+          <div><div class="of-l">STRIKE IDEAL</div><div class="of-v" id="or-strike" style="color:var(--text3)">—</div><div class="of-s" id="or-strike-s">—</div></div>
+          <div><div class="of-l">PRÊMIO MÁX PAGAR</div><div class="of-v" id="or-premio" style="color:var(--text3)">—</div><div class="of-s" id="or-premio-s">—</div></div>
+          <div><div class="of-l">VENCIMENTO</div><div class="of-v" id="or-venc" style="color:var(--text3)">—</div><div class="of-s" id="or-venc-s">—</div></div>
+        </div>
+        <div class="greeks">
+          <div class="g-item"><div class="g-l">DELTA</div><div class="g-v" id="gr-d">—</div></div>
+          <div class="g-item"><div class="g-l">GAMMA</div><div class="g-v" id="gr-g">—</div></div>
+          <div class="g-item"><div class="g-l">THETA/DIA</div><div class="g-v" id="gr-t">—</div></div>
+          <div class="g-item"><div class="g-l">VEGA (/1%IV)</div><div class="g-v" id="gr-v">—</div></div>
+          <div class="g-item"><div class="g-l">IV</div><div class="g-v" id="gr-iv">—</div></div>
+          <div class="g-item"><div class="g-l">STOP (-50%)</div><div class="g-v" id="gr-stop">—</div></div>
+          <div class="g-item"><div class="g-l">ALVO 1 (+80%)</div><div class="g-v" id="gr-a1">—</div></div>
+          <div class="g-item"><div class="g-l">ALVO 2 (+150%)</div><div class="g-v" id="gr-a2">—</div></div>
+        </div>
+      </div>
+      <div class="pos-strip">
+        <div class="pbox"><div class="pbox-l">KELLY FRACTION</div><div class="pbox-v" id="ky-f">—</div></div>
+        <div class="pbox"><div class="pbox-l">CONTRATOS</div><div class="pbox-v" id="ky-c">—</div></div>
+        <div class="pbox"><div class="pbox-l">CAPITAL ALOCADO</div><div class="pbox-v" id="ky-cap">—</div></div>
+        <div class="pbox"><div class="pbox-l">PERDA MÁX</div><div class="pbox-v" id="ky-r">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('log')">LOG</button>
+      <button class="tab-btn" onclick="switchTab('hist')">HISTÓRICO</button>
+      <button class="tab-btn" onclick="switchTab('learn')">AUTO-APRENDIZADO</button>
+    </div>
+    <div class="tab-c active" id="tc-log">
+      <div class="log-wrap">
+        <div class="log-hdr"><div class="log-t">SYSTEM LOG</div><button class="btn btn-sec" style="padding:2px 8px;font-size:8px" onclick="clrLog()">LIMPAR</button></div>
+        <div class="log-body" id="logBody"><div class="ll sys"><span class="ts">[BOOT]</span><span class="msg">Council of Algos v6 — multi-source, full-AI</span></div></div>
+      </div>
+    </div>
+    <div class="tab-c" id="tc-hist">
+      <div class="hist-wrap">
+        <div class="hist-hdr">HISTÓRICO DE SINAIS</div>
+        <table class="htable"><thead><tr><th>HORA</th><th>ATIVO</th><th>SINAL</th><th>STRIKE</th><th>PRÊMIO</th><th>CONTR.</th><th>PROB</th><th>R/R</th></tr></thead>
+        <tbody id="histBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);font-size:9px;padding:16px">Nenhum sinal.</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="tab-c" id="tc-learn">
+      <div class="algo-card">
+        <div class="algo-hdr"><div class="algo-info"><div class="av av-cl">CL</div><div><div class="algo-name">Auto-Aprendizado</div><div class="algo-role">PADRÕES DE ERRO · OPÇÕES A SECO</div></div></div><div class="ast st-idle" id="st-learn">IDLE</div></div>
+        <div class="algo-body"><div class="algo-out" id="out-learn"><div class="empty"><div class="eico">🧠</div><div class="etxt">Gere sinais para analisar padrões.</div></div></div></div>
+        <div style="padding:9px 13px;border-top:1px solid var(--border)"><button class="btn btn-sec" style="width:100%" onclick="runLearn()">🔍 ANALISAR PADRÕES COM CLAUDE</button></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-async function scan(){
- const log = document.getElementById("log");
- log.innerText = "Buscando cotações...";
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let asset = 'PETR4', stopped = false, histArr = [];
+let mktData = {}, macroObj = {}, polRisk = {}, bootInProgress = false;
+const delay = ms => new Promise(r => setTimeout(r, ms));
 
- try{
-   const q = await fetch("https://brapi.dev/api/quote/PETR4?token=");
-   const data = await q.json();
-   const price = data.results?.[0]?.regularMarketPrice || "N/A";
+setInterval(() => {
+  document.getElementById('clk').textContent =
+    new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}, 1000);
 
-   log.innerText += "\\nPETR4: R$"+price;
-
-   const c = await fetch("/api/claude",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:`Analise PETR4 hoje a R$${price} e diga compra ou venda com score.`})
-   });
-
-   const r = await c.json();
-   log.innerText += "\\nClaude respondeu:\\n"+JSON.stringify(r,null,2);
-
- }catch(e){
-   log.innerText += "\\nErro: "+e.message;
- }
+// ═══════════════════════════════════════════
+// LOG / TABS / UI HELPERS
+// ═══════════════════════════════════════════
+function addLog(t, m) {
+  const b = document.getElementById('logBody');
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  const d = document.createElement('div');
+  d.className = `ll ${t}`;
+  d.innerHTML = `<span class="ts">[${ts}]</span><span class="msg">${m}</span>`;
+  b.appendChild(d); b.scrollTop = b.scrollHeight;
 }
+function clrLog() { document.getElementById('logBody').innerHTML = ''; }
+function switchTab(t) {
+  ['log','hist','learn'].forEach((k,i) => {
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active', k === t);
+    document.getElementById(`tc-${k}`).classList.toggle('active', k === t);
+  });
+}
+function setOvStep(id, state, text) {
+  const icons = { run: '<span class="ms"></span>', ok: '✓', err: '✗', wait: '◯' };
+  const el = document.getElementById(id);
+  el.className = `ovs ${state}`;
+  el.innerHTML = `<span class="ovs-ico">${icons[state]}</span>${text}`;
+}
+function setSt(id, s) {
+  const el = document.getElementById(`st-${id}`);
+  const m = { idle:['st-idle','IDLE'], run:['st-run','ANALISANDO...'], done:['st-done','CONCLUÍDO'], err:['st-err','ERRO'] };
+  el.className = `ast ${m[s][0]}`; el.textContent = m[s][1];
+}
+function ovSub(t) { document.getElementById('ov-sub').textContent = t; }
+
+
+function getCfg() {
+  return {
+    brapi: document.getElementById('key-brapi')?.value.trim() || '',
+    dsKey: document.getElementById('key-ds')?.value.trim() || '',
+    dsUrl: (document.getElementById('url-ds')?.value.trim() || ''),
+    gmKey: document.getElementById('key-gm')?.value.trim() || '',
+    gmUrl: (document.getElementById('url-gm')?.value.trim() || ''),
+    clKey: document.getElementById('key-cl')?.value.trim() || '',
+    clUrl: (document.getElementById('url-cl')?.value.trim() || '')
+  };
+}
+function syncConfigFields(cfg = {}) {
+  const map = {
+    'key-brapi': cfg.brapi || '',
+    'cfg-brapi': cfg.brapi || '',
+    'key-ds': cfg.dsKey || '',
+    'cfg-ds-key': cfg.dsKey || '',
+    'url-ds': cfg.dsUrl || '',
+    'cfg-ds-url': cfg.dsUrl || '',
+    'key-gm': cfg.gmKey || '',
+    'cfg-gm-key': cfg.gmKey || '',
+    'url-gm': cfg.gmUrl || '',
+    'cfg-gm-url': cfg.gmUrl || '',
+    'key-cl': cfg.clKey || '',
+    'cfg-cl-key': cfg.clKey || '',
+    'url-cl': cfg.clUrl || '',
+    'cfg-cl-url': cfg.clUrl || ''
+  };
+  Object.entries(map).forEach(([id,val]) => { const el=document.getElementById(id); if (el) el.value = val; });
+}
+function loadSavedConfig() {
+  try {
+    const raw = localStorage.getItem('council_cfg_v2');
+    const cfg = raw ? JSON.parse(raw) : {};
+    syncConfigFields(cfg);
+    return cfg;
+  } catch (_) {
+    return {};
+  }
+}
+function saveConfigLocal(cfg) {
+  localStorage.setItem('council_cfg_v2', JSON.stringify(cfg));
+}
+function prefillDefaultProxies() {
+  const sameOrigin = window.location.protocol !== 'file:';
+  if (sameOrigin) {
+    if (!document.getElementById('url-ds').value) document.getElementById('url-ds').value = '/api/deepseek';
+    if (!document.getElementById('url-gm').value) document.getElementById('url-gm').value = '/api/gemini';
+    if (!document.getElementById('url-cl').value) document.getElementById('url-cl').value = '/api/claude';
+  }
+  document.getElementById('cfg-ds-url').value = document.getElementById('url-ds').value || '';
+  document.getElementById('cfg-gm-url').value = document.getElementById('url-gm').value || '';
+  document.getElementById('cfg-cl-url').value = document.getElementById('url-cl').value || '';
+}
+function validateConfig(cfg) {
+  if (!cfg.brapi) return 'Preencha o token da BRAPI.';
+  if (!cfg.clKey) return 'Preencha a Claude API Key.';
+  if (!cfg.clUrl) return 'Preencha a URL do proxy do Claude.';
+  if (cfg.dsKey && !cfg.dsUrl) return 'Você informou a chave da DeepSeek, mas faltou a URL do proxy da DeepSeek.';
+  if (cfg.gmKey && !cfg.gmUrl) return 'Você informou a chave do Gemini, mas faltou a URL do proxy do Gemini.';
+  return '';
+}
+function openConfig(force=false) {
+  const mask = document.getElementById('cfgMask');
+  const err = document.getElementById('cfgErr');
+  if (err) { err.textContent=''; err.classList.remove('show'); }
+  syncConfigFields(getCfg());
+  if (force) mask.classList.remove('hidden');
+}
+async function saveConfigAndBoot() {
+  const cfg = {
+    brapi: document.getElementById('cfg-brapi').value.trim(),
+    dsKey: document.getElementById('cfg-ds-key').value.trim(),
+    dsUrl: document.getElementById('cfg-ds-url').value.trim(),
+    gmKey: document.getElementById('cfg-gm-key').value.trim(),
+    gmUrl: document.getElementById('cfg-gm-url').value.trim(),
+    clKey: document.getElementById('cfg-cl-key').value.trim(),
+    clUrl: document.getElementById('cfg-cl-url').value.trim()
+  };
+  const msg = validateConfig(cfg);
+  const err = document.getElementById('cfgErr');
+  if (msg) {
+    err.textContent = msg;
+    err.classList.add('show');
+    return;
+  }
+  saveConfigLocal(cfg);
+  syncConfigFields(cfg);
+  document.getElementById('cfgMask').classList.add('hidden');
+  addLog('ok', '[CONFIG] Credenciais carregadas manualmente.');
+  await bootAll();
+}
+
+// ═══════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════
+function normalizeProxyUrl(url, providerLabel) {
+  const raw = (url || '').trim();
+  if (!raw) throw new Error(`Configure a URL do proxy do ${providerLabel}.`);
+  const isRelativeApi = raw.startsWith('/api/');
+  if (window.location.protocol === 'file:' && isRelativeApi) {
+    throw new Error(`Você abriu o HTML direto no navegador. Para ${providerLabel}, use a URL completa do backend, ex: https://seu-app.up.railway.app${raw}`);
+  }
+  return raw;
+}
+async function callCL(key, prompt, maxTok = 1200, proxyUrl = '') {
+  const finalUrl = normalizeProxyUrl(proxyUrl, 'Claude');
+  const r = await fetch(finalUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: key, prompt, max_tokens: maxTok })
+  });
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(data.error || data.message || `Claude proxy ${r.status}`);
+  return data.text || data.completion || data.content || '';
+}
+
+async function callGM(key, prompt, proxyUrl = '') {
+  const finalUrl = normalizeProxyUrl(proxyUrl, 'Gemini');
+  const r = await fetch(finalUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: key, prompt })
+  });
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(data.error || data.message || `Gemini proxy ${r.status}`);
+  return data.text || data.completion || data.content || '';
+}
+
+async function callDS(key, prompt, proxyUrl = '') {
+  const finalUrl = normalizeProxyUrl(proxyUrl, 'DeepSeek');
+  const r = await fetch(finalUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: key, prompt })
+  });
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(data.error || data.message || `DeepSeek proxy ${r.status}`);
+  return data.text || data.completion || data.content || '';
+}
+
+async function fetchBrapiQuote(symbol, token) {
+  if (!token) return null;
+  const url = `https://brapi.dev/api/quote/${encodeURIComponent(symbol)}?token=${encodeURIComponent(token)}`;
+  const r = await fetch(url, { cache: 'no-store', headers: { 'Accept': 'application/json' } });
+  if (!r.ok) throw new Error(`BRAPI ${r.status}`);
+  const data = await r.json();
+  const q = data?.results?.[0];
+  if (!q?.regularMarketPrice) throw new Error('BRAPI sem cotação');
+  const price = Number(q.regularMarketPrice);
+  const prev = Number(q.regularMarketPreviousClose || q.regularMarketPrice);
+  const chgPct = prev ? ((price - prev) / prev) * 100 : 0;
+  const w52h = Number(q.fiftyTwoWeekHigh || price);
+  const w52l = Number(q.fiftyTwoWeekLow || price);
+  const vol = Number(q.regularMarketVolume || 0);
+  return {
+    price,
+    chgPct,
+    w52h,
+    w52l,
+    atr14: null,
+    atrPct: 2.2,
+    ivEst: 35.1,
+    vol,
+    avgVol: vol || 1,
+    volRel: 1,
+    poc: null,
+    hist: [],
+    src: 'BRAPI'
+  };
+}
+
+// ═══════════════════════════════════════════
+// YAHOO FINANCE — 3 proxies sequenciais
+// ═══════════════════════════════════════════
+async function fetchYahooRaw(sym) {
+  const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=3mo`;
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(yUrl)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`
+  ];
+  for (const proxy of proxies) {
+    try {
+      const r = await fetch(proxy, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+      if (!r.ok) continue;
+      let body = await r.text();
+      // allorigins wraps in {contents:...}
+      if (body.includes('"contents"')) body = JSON.parse(body).contents;
+      const data = typeof body === 'string' ? JSON.parse(body) : body;
+      const res = data?.chart?.result?.[0];
+      if (res) return res;
+    } catch(e) { /* try next */ }
+  }
+  return null;
+}
+
+function parseYahoo(res) {
+  const meta = res.meta;
+  const q = res.indicators?.quote?.[0] || {};
+  const closes = (q.close  || []);
+  const highs   = (q.high   || []);
+  const lows    = (q.low    || []);
+  const vols    = (q.volume || []);
+
+  // Build clean aligned arrays
+  const len = Math.min(closes.length, highs.length, lows.length);
+  const hist = [];
+  for (let i = 0; i < len; i++) {
+    if (closes[i] != null && highs[i] != null && lows[i] != null) {
+      hist.push({ close: closes[i], high: highs[i], low: lows[i], volume: vols[i] || 0 });
+    }
+  }
+
+  const price   = meta.regularMarketPrice  || hist.at(-1)?.close || 38;
+  const prev    = meta.chartPreviousClose  || hist.at(-2)?.close || price;
+  const chgPct  = prev ? (price - prev) / prev * 100 : 0;
+  const w52h    = meta.fiftyTwoWeekHigh || Math.max(...hist.slice(-252).map(d => d.high));
+  const w52l    = meta.fiftyTwoWeekLow  || Math.min(...hist.slice(-252).map(d => d.low));
+
+  const atr14 = calcATR14(hist);
+  const atrPct = atr14 ? (atr14 / price * 100) : 2.2;
+  const ivEst  = atrPct * Math.sqrt(252 / 14);
+
+  const vol    = meta.regularMarketVolume || vols.filter(Boolean).at(-1) || 0;
+  const vols3m = vols.slice(-63).filter(Boolean);
+  const avgVol = vols3m.length ? vols3m.reduce((a,b)=>a+b,0)/vols3m.length : vol;
+  const volRel = avgVol > 0 ? vol / avgVol : 1;
+  const poc    = calcPOC(hist);
+
+  return { price, chgPct, w52h, w52l, atr14, atrPct, ivEst, vol, avgVol, volRel, poc, hist };
+}
+
+function calcATR14(hist) {
+  if (hist.length < 2) return null;
+  let atr = null;
+  for (let i = 1; i < hist.length; i++) {
+    const tr = Math.max(
+      hist[i].high - hist[i].low,
+      Math.abs(hist[i].high - hist[i-1].close),
+      Math.abs(hist[i].low  - hist[i-1].close)
+    );
+    atr = atr === null ? tr : (atr * 13 + tr) / 14;
+  }
+  return atr;
+}
+
+function calcPOC(hist) {
+  const last20 = hist.slice(-20);
+  let tw = 0, wp = 0;
+  last20.forEach(d => {
+    const mid = (d.high + d.low) / 2;
+    wp += mid * d.volume; tw += d.volume;
+  });
+  return tw > 0 ? wp / tw : null;
+}
+
+// Proper Black-Scholes Greeks
+function calcGreeks(S, K, iv, dte) {
+  const T = Math.max(dte / 365, 1 / 365);
+  const sigma = iv / 100;
+  const sqrtT = Math.sqrt(T);
+  const d1 = (Math.log(S / K) + 0.5 * sigma * sigma * T) / (sigma * sqrtT);
+  const d2 = d1 - sigma * sqrtT;
+  const phi  = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+  const ncdf = x => {
+    const b = [0.319381530, -0.356563782, 1.781477937, -1.821255978, 1.330274429];
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    let p = t; let s = 0;
+    b.forEach((c, i) => { p *= t; if(i===0) s=c*t; else s += c*p; });
+    s = 1 - phi(x) * (b[0]*t + b[1]*Math.pow(t,2) + b[2]*Math.pow(t,3) + b[3]*Math.pow(t,4) + b[4]*Math.pow(t,5));
+    return x >= 0 ? s : 1 - s;
+  };
+  const delta  = parseFloat(ncdf(d1).toFixed(4));
+  const gamma  = parseFloat((phi(d1) / (S * sigma * sqrtT)).toFixed(6));
+  const vega   = parseFloat((S * phi(d1) * sqrtT / 100).toFixed(4));  // per 1% IV
+  const theta  = parseFloat((-(S * phi(d1) * sigma / (2 * sqrtT)) / 365).toFixed(5));
+  // Call premium (intrinsic + extrinsic, r≈0)
+  const prem   = Math.max(S * ncdf(d1) - K * ncdf(d2), 0.01);
+  return { delta, gamma, vega, theta, prem: parseFloat(prem.toFixed(2)) };
+}
+
+function nextVenc() {
+  const now = new Date();
+  for (let m = 0; m < 4; m++) {
+    const last = new Date(now.getFullYear(), now.getMonth() + m + 1, 0);
+    while (last.getDay() !== 5) last.setDate(last.getDate() - 1);
+    if (last > now) return { date: last, dte: Math.max(7, Math.round((last - now) / 864e5)) };
+  }
+  return { date: new Date(Date.now() + 21*864e5), dte: 21 };
+}
+
+// ═══════════════════════════════════════════
+// MACRO VIA CLAUDE (search tool)
+// ═══════════════════════════════════════════
+const MACRO_JSON_SCHEMA = `{"brent":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"minerio":{"v":"XXX","c":"+X.X%","t":"alta|queda|neutro"},"usd_brl":{"v":"X.XX","c":"+X.X%","t":"alta|queda|neutro"},"dxy":{"v":"XXX.X","c":"+X.X%","t":"alta|queda|neutro"},"vix":{"v":"XX.X","c":"+X.X%","t":"alta|queda|neutro"},"pbr":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"vale_adr":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"selic":{"v":"XX.XX%","c":"estavel|subindo|caindo"},"petr4":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"vale3":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"ibov":{"v":"XXXXXX","c":"+X.X%","t":"alta|queda|neutro"},"sentimento":"bullish|bearish|neutro","narr_petr4":"driver principal PETR4 hoje em 1 frase","narr_vale3":"driver principal VALE3 hoje em 1 frase","narrativa":"contexto macro B3 hoje em 2 frases"}`;
+
+async function fetchMacroClaude(kCL, clUrl) {
+  const prompt = `Você é um analista financeiro com acesso às informações mais recentes. Busque e forneça os preços e variações de mercado de HOJE (${new Date().toLocaleDateString('pt-BR')}) para:
+- Petróleo Brent (preço em USD/barril e variação %)
+- Minério de Ferro Dalian (preço em USD/tonelada e variação %)
+- USD/BRL (câmbio e variação %)
+- DXY Index (valor e variação %)
+- VIX (valor e variação %)
+- PBR (Petrobras ADR em NY, preço e variação %)
+- VALE (Vale ADR em NY, preço e variação %)
+- Selic atual (% ao ano)
+- PETR4 na B3 (preço em R$ e variação %)
+- VALE3 na B3 (preço em R$ e variação %)
+- Ibovespa (pontos e variação %)
+- Sentimento geral dos mercados hoje
+
+Retorne APENAS o JSON abaixo preenchido com os dados reais de hoje. Sem markdown, sem texto adicional, apenas o JSON:
+${MACRO_JSON_SCHEMA}`;
+
+  const raw = await callCL(kCL, prompt, 800, clUrl);
+  const clean = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+  if (s === -1) throw new Error('JSON macro não encontrado na resposta Claude');
+  return JSON.parse(clean.substring(s, e + 1));
+}
+
+async function fetchMacroGemini(kGM, gmUrl) {
+  const prompt = `Busque os dados de mercado de HOJE e retorne APENAS este JSON preenchido (sem markdown, sem texto extra):
+${MACRO_JSON_SCHEMA}`;
+  const raw = await callGM(kGM, prompt, gmUrl);
+  const clean = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+  if (s === -1) throw new Error('JSON macro Gemini não encontrado');
+  return JSON.parse(clean.substring(s, e + 1));
+}
+
+async function fetchPolRisk(kCL, macro, clUrl) {
+  const prompt = `Analise o risco político e jurídico ATUAL (${new Date().toLocaleDateString('pt-BR')}) para PETR4 (Petrobras) e VALE3 na B3 com base nos seguintes dados de mercado de hoje:
+Sentimento global: ${macro.sentimento}
+IBOV: ${macro.ibov?.v} (${macro.ibov?.c})
+USD/BRL: ${macro.usd_brl?.v}
+Narrativa: ${macro.narrativa}
+
+Considere: intervenções governamentais, política de dividendos, mudanças regulatórias, decisões judiciais, declarações de ministros ou presidente sobre Petrobras/Vale.
+
+Retorne APENAS JSON válido sem markdown:
+{"petr4":{"nivel":"baixo|medio|alto|critico","score":0-100,"bloqueio":true|false,"driver":"ex: dividendos, regulação, neutro","just":"1 frase curta"},"vale3":{"nivel":"baixo|medio|alto|critico","score":0-100,"bloqueio":true|false,"driver":"ex: royalties, regulação, neutro","just":"1 frase curta"}}`;
+
+  const raw = await callCL(kCL, prompt, 400, clUrl);
+  const clean = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+  if (s === -1) return { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem riscos identificados'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem riscos identificados'} };
+  return JSON.parse(clean.substring(s, e + 1));
+}
+
+// ═══════════════════════════════════════════
+// POPULATE UI
+// ═══════════════════════════════════════════
+function fillMacroCell(id, val, chg, trend) {
+  const v = document.getElementById(`mv-${id}`);
+  const c = document.getElementById(`mc-${id}`);
+  if (v) { v.textContent = val || '—'; v.className = `mc-v ${trend==='alta'?'up':trend==='queda'?'down':'neut'}`; }
+  if (c) { c.textContent = chg || '—'; c.className = `mc-c ${chg?.startsWith('+')?'up':chg?.startsWith('-')?'down':'neut'}`; }
+}
+function fillMacro(m, src) {
+  macroObj = m;
+  fillMacroCell('brent',  `$${m.brent?.v}`,      m.brent?.c,      m.brent?.t);
+  fillMacroCell('iron',   `$${m.minerio?.v}`,    m.minerio?.c,    m.minerio?.t);
+  fillMacroCell('usd',    m.usd_brl?.v,          m.usd_brl?.c,    m.usd_brl?.t);
+  fillMacroCell('dxy',    m.dxy?.v,              m.dxy?.c,        m.dxy?.t);
+  fillMacroCell('vix',    m.vix?.v,              m.vix?.c,        m.vix?.t);
+  fillMacroCell('pbr',    `$${m.pbr?.v}`,        m.pbr?.c,        m.pbr?.t);
+  fillMacroCell('vadr',   `$${m.vale_adr?.v}`,   m.vale_adr?.c,   m.vale_adr?.t);
+  fillMacroCell('selic',  m.selic?.v,            m.selic?.c,      'neutro');
+  fillMacroCell('p4',     `R$${m.petr4?.v}`,     m.petr4?.c,      m.petr4?.t);
+  fillMacroCell('v3',     `R$${m.vale3?.v}`,     m.vale3?.c,      m.vale3?.t);
+  fillMacroCell('ibov',   m.ibov?.v,             m.ibov?.c,       m.ibov?.t);
+  document.getElementById('mv-upd').textContent = new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('mv-upd-src').textContent = src;
+  document.getElementById('macro-src').textContent = `fonte: ${src} — ${new Date().toLocaleTimeString('pt-BR')}`;
+  const narr = document.getElementById('macro-narr');
+  if (m.narrativa) {
+    const sent = m.sentimento || 'neutro';
+    const scls = sent==='bullish'?'src-yahoo':sent==='bearish'?'src-brapi':'src-claude';
+    narr.innerHTML = `<span class="src-badge ${scls}">${sent.toUpperCase()}</span>${m.narrativa}`;
+    narr.style.display = 'block';
+  }
+  const mst = document.getElementById('mst');
+  mst.className = 'mst mst-ok'; mst.textContent = `✓ ${src}`;
+}
+
+function fillPolBadge(pol) {
+  polRisk = pol;
+  const ticker = asset;
+  const p = pol[ticker.toLowerCase()] || pol.petr4;
+  if (!p) return;
+  const dp = document.getElementById('dp-pol');
+  const ds = document.getElementById('dp-pol-s');
+  if (dp) { dp.textContent = `${p.nivel.toUpperCase()} (${p.score})`; dp.style.color = p.nivel==='baixo'?'var(--green)':p.nivel==='medio'?'var(--yellow)':'var(--red)'; }
+  if (ds) ds.textContent = p.just?.substring(0,55) || '—';
+  const hdr = document.getElementById('pol-badge-hdr');
+  const cls = p.nivel==='baixo'?'pol-ok':p.nivel==='medio'?'pol-warn':'pol-bad';
+  hdr.innerHTML = `<span class="pol-badge ${cls}">POL ${ticker}: ${p.nivel.toUpperCase()} · ${p.driver}</span>`;
+}
+
+function fillCard(ticker, d) {
+  mktData[ticker] = d;
+  const p = ticker === 'PETR4' ? 'p4' : 'v3';
+  document.getElementById(`a-${p}-price`).textContent = `R$${d.price.toFixed(2)}`;
+  const ce = document.getElementById(`a-${p}-chg`);
+  ce.textContent = d.chgPct >= 0 ? `▲ +${d.chgPct.toFixed(2)}%` : `▼ ${d.chgPct.toFixed(2)}%`;
+  ce.className = `ap-chg ${d.chgPct >= 0 ? 'up' : 'down'}`;
+  document.getElementById(`a-${p}-atr`).textContent  = `${d.atrPct.toFixed(2)}%`;
+  document.getElementById(`a-${p}-vr`).textContent   = `${d.volRel.toFixed(2)}x`;
+  document.getElementById(`a-${p}-iv`).textContent   = `${d.ivEst.toFixed(1)}%`;
+  document.getElementById(`a-${p}-52h`).textContent  = `R$${d.w52h.toFixed(2)}`;
+  document.getElementById(`a-${p}-52l`).textContent  = `R$${d.w52l.toFixed(2)}`;
+  const stEl = document.getElementById(`a-${p}-st`);
+  stEl.className = 'a-st ast-ok'; stEl.textContent = `✓ ${d.src}`;
+}
+
+function updateDerived() {
+  const d = mktData[asset];
+  if (!d) return;
+  const { price, atrPct, ivEst, volRel, poc } = d;
+  const capital = parseFloat(document.getElementById('f-capital').value) || 5000;
+  const { date, dte } = nextVenc();
+  const sc = price * 1.01, sp = price * 0.99;
+  const gC = calcGreeks(price, sc, ivEst, dte);
+  const gP = calcGreeks(price, sp, ivEst, dte);
+  const prem = Math.max(gC.prem, 0.05);
+  const capOp = capital * 0.18;
+  const conts = Math.max(1, Math.floor(capOp / (prem * 100)));
+  const stop = prem * 0.50;
+
+  const sv = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  sv('sel-lbl', asset);
+  document.getElementById('sel-lbl').style.color = asset==='PETR4'?'var(--petro)':'var(--vale)';
+  sv('dp-price', `R$ ${price.toFixed(2)}`);
+  sv('dp-atr',   `${atrPct.toFixed(2)}%`);
+  sv('dp-iv',    `${ivEst.toFixed(1)}%`);
+  sv('dp-poc',   poc ? `R$ ${poc.toFixed(2)}` : `R$ ${(price*0.985).toFixed(2)}`);
+  sv('dp-sc',    `R$ ${sc.toFixed(2)}`);
+  sv('dp-sp',    `R$ ${sp.toFixed(2)}`);
+  sv('dp-pm',    `R$ ${prem.toFixed(2)}`);
+  sv('dp-dte',   `${dte}d`);
+  sv('dp-dte-s', date.toLocaleDateString('pt-BR'));
+  sv('dp-vr',    `${volRel.toFixed(2)}x`);
+  sv('dp-cont',  `${conts} contratos`);
+  sv('dp-cont-s',`R$${capOp.toFixed(0)} alocado`);
+  // macro sentiment
+  if (macroObj.sentimento) {
+    const sentEl = document.getElementById('dp-sent');
+    const sentS  = document.getElementById('dp-sent-s');
+    if (sentEl) { sentEl.textContent = macroObj.sentimento.toUpperCase(); sentEl.style.color = macroObj.sentimento==='bullish'?'var(--green)':macroObj.sentimento==='bearish'?'var(--red)':'var(--yellow)'; }
+    if (sentS) sentS.textContent = (asset==='PETR4' ? macroObj.narr_petr4 : macroObj.narr_vale3)?.substring(0,55) || '—';
+  }
+  d.derived = { price, sc, sp, prem, dte, date, ivEst, atrPct, volRel, poc, capOp, conts, stop, capital, gC, gP };
+  fillPolBadge(polRisk.petr4 ? polRisk : { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Aguardando'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Aguardando'} });
+}
+
+function selAsset(a) {
+  asset = a;
+  ['PETR4','VALE3'].forEach(t => document.getElementById(`card-${t}`).classList.toggle('active', t===a));
+  updateDerived();
+  addLog('info', `Ativo: ${a}`);
+}
+
+// ═══════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════
+async function bootAll() {
+  if (bootInProgress) return;
+  bootInProgress = true;
+  const cfg = getCfg();
+  const kBR = cfg.brapi;
+  const kDS = cfg.dsKey;
+  const urlDS = cfg.dsUrl;
+  const kGM = cfg.gmKey;
+  const kCL = cfg.clKey;
+  const urlGM = cfg.gmUrl;
+  const urlCL = cfg.clUrl;
+  const cfgMsg = validateConfig(cfg);
+  if (cfgMsg) {
+    bootInProgress = false;
+    document.getElementById('overlay').classList.add('gone');
+    document.getElementById('cfgMask').classList.remove('hidden');
+    addLog('warn', `[CONFIG] ${cfgMsg}`);
+    return;
+  }
+
+  document.getElementById('overlay').classList.remove('gone');
+
+  // ── 1. QUOTES ──
+  setOvStep('os-q', 'run', 'Buscando cotações B3 (Yahoo + proxies)...');
+  ovSub('Buscando cotações...');
+  let quotesOk = true;
+  for (const [ticker, sym] of [['PETR4','PETR4.SA'],['VALE3','VALE3.SA']]) {
+    let loaded = false;
+    if (kBR) {
+      try {
+        addLog('info', `[BRAPI] ${ticker}...`);
+        const d = await fetchBrapiQuote(ticker, kBR);
+        fillCard(ticker, d);
+        addLog('ok', `[BRAPI] ${ticker}: R$${d.price.toFixed(2)} | Var:${d.chgPct.toFixed(2)}%`);
+        loaded = true;
+      } catch (e) {
+        addLog('warn', `[BRAPI] ${ticker}: ${e.message} — tentando Yahoo`);
+      }
+    }
+    if (!loaded) {
+      addLog('info', `[YAHOO] ${ticker} (tentando 3 proxies)...`);
+      const res = await fetchYahooRaw(sym);
+      if (res) {
+        const d = parseYahoo(res);
+        d.src = 'Yahoo Finance';
+        fillCard(ticker, d);
+        addLog('ok', `[YAHOO] ${ticker}: R$${d.price.toFixed(2)} | ATR:${d.atrPct.toFixed(2)}% | IV:${d.ivEst.toFixed(1)}% | VolRel:${d.volRel.toFixed(2)}x`);
+        loaded = true;
+      }
+    }
+    if (!loaded) {
+      quotesOk = false;
+      addLog('warn', `[QUOTES] ${ticker}: BRAPI e Yahoo falharam — usando estimativa`);
+      const fb = { price: ticker==='PETR4'?38.5:62.0, chgPct:0, atrPct:2.2, ivEst:35.1, volRel:1.0, w52h:45, w52l:28, poc:null, hist:[], src:'Estimativa' };
+      fillCard(ticker, fb);
+      const pre = ticker==='PETR4'?'p4':'v3';
+      document.getElementById(`a-${pre}-st`).className = 'a-st ast-err';
+      document.getElementById(`a-${pre}-st`).textContent = '⚠ Estimativa';
+    }
+  }
+  setOvStep('os-q', quotesOk?'ok':'err', quotesOk?'Cotações B3 carregadas ✓':'Cotações parciais — macro IA irá corrigir');
+
+  // ── 2. MACRO ──
+  setOvStep('os-m', 'run', 'Buscando macro via IA...');
+  ovSub('Buscando dados macro em tempo real...');
+  let macroSrc = '';
+  try {
+    if (!kCL || !urlCL) throw new Error('Configure Claude key + proxy antes de iniciar.');
+    // AI via backend proxy. Gemini primeiro, Claude como fallback.
+    if (kGM) {
+      try {
+        addLog('info', '[GEMINI] Tentando macro com Google Search...');
+        const m = await fetchMacroGemini(kGM, urlGM);
+        fillMacro(m, 'Gemini + Google Search');
+        macroSrc = 'Gemini';
+        addLog('ok', `[GEMINI MACRO] ✓ Brent:$${m.brent?.v} Minério:$${m.minerio?.v} USD:${m.usd_brl?.v}`);
+      } catch (ge) {
+        addLog('warn', `[GEMINI] Falhou (${ge.message.substring(0,50)}) — usando Claude como macro`);
+        const m = await fetchMacroClaude(kCL, urlCL);
+        fillMacro(m, 'Claude Sonnet 4');
+        macroSrc = 'Claude';
+        addLog('ok', `[CLAUDE MACRO] ✓ Brent:$${m.brent?.v} USD:${m.usd_brl?.v} IBOV:${m.ibov?.v}`);
+      }
+    } else if (kCL) {
+      addLog('info', '[CLAUDE] Gemini não configurado — buscando macro com Claude via proxy...');
+      const m = await fetchMacroClaude(kCL, urlCL);
+      fillMacro(m, 'Claude Sonnet 4');
+      macroSrc = 'Claude';
+      addLog('ok', `[CLAUDE MACRO] ✓ Brent:$${m.brent?.v} USD:${m.usd_brl?.v}`);
+    }
+    setOvStep('os-m', 'ok', `Macro carregado via ${macroSrc} ✓`);
+
+    // Sync prices from macro if Yahoo failed
+    if (!quotesOk) {
+      if (macroObj.petr4?.v && mktData.PETR4) {
+        mktData.PETR4.price = parseFloat(macroObj.petr4.v.replace(',','.'));
+        mktData.PETR4.chgPct = parseFloat(macroObj.petr4.c?.replace(/[^0-9.-]/g,'')) || 0;
+        mktData.PETR4.src = `${macroSrc} (cotação)`;
+        fillCard('PETR4', mktData.PETR4);
+        addLog('ok', `[MACRO→PETR4] Preço sincronizado: R$${mktData.PETR4.price.toFixed(2)}`);
+      }
+      if (macroObj.vale3?.v && mktData.VALE3) {
+        mktData.VALE3.price = parseFloat(macroObj.vale3.v.replace(',','.'));
+        mktData.VALE3.chgPct = parseFloat(macroObj.vale3.c?.replace(/[^0-9.-]/g,'')) || 0;
+        mktData.VALE3.src = `${macroSrc} (cotação)`;
+        fillCard('VALE3', mktData.VALE3);
+        addLog('ok', `[MACRO→VALE3] Preço sincronizado: R$${mktData.VALE3.price.toFixed(2)}`);
+      }
+    }
+  } catch (e) {
+    addLog('err', `[MACRO] Erro: ${e.message}`);
+    document.getElementById('mst').className = 'mst mst-err';
+    document.getElementById('mst').textContent = '✗ Erro macro: ' + e.message.substring(0,40);
+    setOvStep('os-m', 'err', 'Erro: ' + e.message.substring(0,40));
+  }
+
+  // ── 3. POL RISK ──
+  setOvStep('os-p', 'run', 'Claude avaliando risco político...');
+  ovSub('Analisando risco político...');
+  if (Object.keys(macroObj).length && kCL) {
+    try {
+      const pol = await fetchPolRisk(kCL, macroObj, urlCL);
+      polRisk = pol;
+      addLog('ok', `[POL RISK] PETR4: ${pol.petr4?.nivel} (${pol.petr4?.score}) | VALE3: ${pol.vale3?.nivel} (${pol.vale3?.score})`);
+      setOvStep('os-p', 'ok', `Risco político avaliado ✓`);
+    } catch (e) {
+      addLog('warn', `[POL RISK] ${e.message}`);
+      setOvStep('os-p', 'err', 'Erro avaliação política');
+      polRisk = { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Erro na avaliação'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Erro na avaliação'} };
+    }
+  } else {
+    setOvStep('os-p', 'err', 'Macro não carregado — pulando');
+    polRisk = { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem dados macro'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem dados macro'} };
+  }
+
+  // ── 4. CALC ──
+  setOvStep('os-c', 'run', 'Calculando parâmetros...');
+  ovSub('Calculando ATR, IV, Greeks, contratos...');
+  updateDerived();
+  setOvStep('os-c', 'ok', 'Parâmetros calculados ✓');
+
+  await delay(500);
+  document.getElementById('overlay').classList.add('gone');
+  addLog('ok', '✓ Inicialização completa. Pronto para COUNCIL SCAN.');
+  bootInProgress = false;
+}
+
+// ═══════════════════════════════════════════
+// COLORIZE & TYPE
+// ═══════════════════════════════════════════
+const colorize = t => t
+  .replace(/\b(CALL|ALTA|BULLISH|FAVORÁVEL)\b/g, '<span style="color:var(--green)">$1</span>')
+  .replace(/\b(PUT|QUEDA|BEARISH|DESFAVORÁVEL)\b/g, '<span style="color:var(--red)">$1</span>')
+  .replace(/\b(AGUARDAR|NEUTRO|NÃO OPERAR)\b/g, '<span style="color:var(--yellow)">$1</span>')
+  .replace(/(\[[\w \/]+\])/g, '<span style="color:var(--blue)">$1</span>')
+  .replace(/(R\$\s*[\d.,]+)/g, '<span style="color:var(--text)">$1</span>')
+  .replace(/(\d+\.?\d*\s*%)/g, '<span style="color:var(--text)">$1</span>');
+
+async function typeInto(id, text, spd = 8) {
+  const el = document.getElementById(id); el.innerHTML = '';
+  for (let i = 0; i < text.length; i++) {
+    if (stopped) break;
+    el.innerHTML = colorize(text.substring(0, i + 1)) + '<span class="cur"></span>';
+    await delay(spd);
+  }
+  el.innerHTML = colorize(text);
+}
+const exScore = (t, keys) => { for(const k of keys){const m=t.match(new RegExp(`${k}[^\\d]*(\\d+)`,'i'));if(m)return Math.min(100,parseInt(m[1]))} return Math.floor(55+Math.random()*20); };
+const exLine  = (t, k) => { const m=t.match(new RegExp(`\\[${k}\\][^\\n]*\\n?([^\\[\\n]+)`,'i')); return m?m[1].trim():null; };
+
+// ═══════════════════════════════════════════
+// SCAN PROMPTS
+// ═══════════════════════════════════════════
+function promptDS(d, m, pol) {
+  const dv = d.derived, polA = pol[asset.toLowerCase()] || {nivel:'baixo',bloqueio:false};
+  return `Você é o módulo DeepSeek — analista quantitativo especializado em ${asset}. Analise os dados abaixo e determine a DIREÇÃO para swing trade de ${dv.dte} dias.
+
+DADOS REAIS (fonte: ${d.src}):
+• Preço: R$${d.price.toFixed(2)} | Var: ${d.chgPct.toFixed(2)}%
+• ATR14 (Wilder): ${d.atrPct.toFixed(2)}% | IV anualizada: ${d.ivEst.toFixed(1)}%
+• Volume relativo: ${d.volRel.toFixed(2)}x (${d.volRel>1.5?'ACIMA — institucional ativo':d.volRel<0.7?'ABAIXO — liquidez fraca':'normal'})
+• POC vol.ponderado 20d: R$${(dv.poc||d.price*0.985).toFixed(2)}
+• 52W High: R$${d.w52h.toFixed(2)} | Low: R$${d.w52l.toFixed(2)}
+• Posição range anual: ${((d.price-d.w52l)/(d.w52h-d.w52l)*100).toFixed(0)}%
+
+MACRO REAL-TIME (${Object.keys(m).length>0?'dados de hoje':'estimativa'}):
+• ${asset==='PETR4'?`Brent: $${m.brent?.v} (${m.brent?.c}) — ${m.brent?.t}`:`Minério: $${m.minerio?.v} (${m.minerio?.c}) — ${m.minerio?.t}`}
+• IBOV: ${m.ibov?.v} (${m.ibov?.c}) | VIX: ${m.vix?.v}
+• USD/BRL: ${m.usd_brl?.v} | Sentimento: ${m.sentimento}
+• Driver: ${asset==='PETR4'?m.narr_petr4:m.narr_vale3}
+• Risco político ${asset}: ${polA.nivel} (score ${polA.score}) — ${polA.just||'ok'}
+
+[ESTRUTURA TÉCNICA] suporte/resistência e posição
+[VOLUME FLOW] ${d.volRel.toFixed(2)}x — acumulação ou distribuição?
+[CORRELAÇÃO MACRO] ${asset==='PETR4'?'Brent':'Minério'} confirma a direção?
+[RISCO POLÍTICO] impacto do nível ${polA.nivel}
+[DIREÇÃO QUANT] CALL / PUT / NEUTRO — 1 frase objetiva com % confiança
+[QUANT SCORE] 0-100
+
+Máximo 230 palavras.`;
+}
+
+function promptGM(d, m, pol) {
+  const dv = d.derived, polA = pol[asset.toLowerCase()] || {nivel:'baixo',bloqueio:false};
+  return `Você é o módulo Gemini — analista macro especializado em ${asset}.
+
+MACRO HOJE (${new Date().toLocaleDateString('pt-BR')}):
+• Brent: $${m.brent?.v} (${m.brent?.c}) | Minério: $${m.minerio?.v} (${m.minerio?.c})
+• USD/BRL: ${m.usd_brl?.v} (${m.usd_brl?.c}) | DXY: ${m.dxy?.v} (${m.dxy?.c})
+• VIX: ${m.vix?.v} | Selic: ${m.selic?.v} | Sentimento: ${m.sentimento}
+• PBR ADR: $${m.pbr?.v} (${m.pbr?.c}) | VALE ADR: $${m.vale_adr?.v} (${m.vale_adr?.c})
+• IBOV: ${m.ibov?.v} (${m.ibov?.c}) | ${asset}: R$${d.price.toFixed(2)} (${d.chgPct.toFixed(2)}%)
+• Narrativa: ${m.narrativa}
+
+Risco político ${asset}: ${polA.nivel} (${polA.score}/100) — ${polA.driver} — ${polA.bloqueio?'⚠ BLOQUEAR':'operação permitida'}
+
+${asset==='PETR4'?'Analise: Brent/WTI, hedge USD/BRL, curva DI/Selic, dividendos Petrobras.':'Analise: Minério Dalian, PMI China, USD/BRL, BHP/RIO Tinto ADR vs VALE3.'}
+
+[DRIVER MACRO] catalisador principal hoje
+[CÂMBIO/DXY] impacto na tese
+[ADR FLOW] ${asset==='PETR4'?'PBR':'VALE'} ADR NY → sinal para B3?
+[FILTRO POLÍTICO] bloquear? sim/não
+[SINAL MACRO] FAVORÁVEL CALL / FAVORÁVEL PUT / NEUTRO / BLOQUEAR
+[MACRO SCORE] 0-100
+
+Máximo 230 palavras.`;
+}
+
+function promptCL(d, m, pol, dsDir, gmDir) {
+  const dv = d.derived, polA = pol[asset.toLowerCase()] || {nivel:'baixo',bloqueio:false};
+  const g = dv.gC; // use call greeks as reference
+  return `Você é Claude — gestor de risco e especialista em opções para ${asset}. Consolide os sinais e recomende a opção ideal.
+
+DADOS CALCULADOS (Black-Scholes corretos):
+• Preço: R$${dv.price.toFixed(2)} | IV: ${dv.ivEst.toFixed(1)}% | ATR14: ${dv.atrPct.toFixed(2)}%
+• Strike CALL: R$${dv.sc.toFixed(2)} | Strike PUT: R$${dv.sp.toFixed(2)}
+• Prêmio calculado: R$${dv.prem.toFixed(2)} | DTE: ${dv.dte} dias
+• Delta: ${g.delta} | Gamma: ${g.gamma} | Theta/dia: R$${Math.abs(g.theta).toFixed(5)} | Vega: ${g.vega}
+• Stop (-50%): R$${dv.stop.toFixed(2)} | Alvo1(+80%): R$${(dv.prem*1.80).toFixed(2)} | Alvo2(+150%): R$${(dv.prem*2.50).toFixed(2)}
+• Capital: R$${dv.capital} | Kelly 18%: R$${dv.capOp.toFixed(0)} | Contratos: ${dv.conts}
+
+SINAIS:
+• DeepSeek: ${dsDir}
+• Gemini/Macro: ${gmDir}
+• Risco político ${asset}: ${polA.nivel} (${polA.score}/100) — ${polA.bloqueio?'BLOQUEAR OPERAÇÃO':'ok'}
+• Macro: ${m.sentimento||'neutro'}
+
+USE OS VALORES CALCULADOS ACIMA — não altere Delta, Gamma, Theta, Vega.
+
+Responda EXATAMENTE (sem texto antes ou depois):
+[DIREÇÃO FINAL] CALL / PUT / NÃO OPERAR
+[STRIKE RECOMENDADO] R$ ${dv.sc.toFixed(2)} (CALL) ou R$ ${dv.sp.toFixed(2)} (PUT)
+[VENCIMENTO IDEAL] ${dv.dte} dias
+[PRÊMIO MÁX PAGAR] R$ ${dv.prem.toFixed(2)}
+[DELTA IDEAL] ${g.delta}
+[GAMMA] ${g.gamma}
+[THETA/DIA] -R$ ${Math.abs(g.theta).toFixed(5)}
+[VEGA] ${g.vega}
+[IV ATUAL] ${dv.ivEst.toFixed(1)}%
+[STOP OPÇÃO] R$ ${dv.stop.toFixed(2)}
+[ALVO OPÇÃO 1] R$ ${(dv.prem*1.80).toFixed(2)}
+[ALVO OPÇÃO 2] R$ ${(dv.prem*2.50).toFixed(2)}
+[KELLY FRACTION] 18%
+[CONTRATOS] ${dv.conts}
+[CAPITAL ALOCADO] R$ ${(dv.conts*dv.prem*100).toFixed(0)}
+[PERDA MÁX] R$ ${(dv.conts*dv.stop*100).toFixed(0)}
+[CONFLUÊNCIA] [0-3]/3
+[RISK SCORE] [0-100]
+[VEREDITO FINAL] COMPRA CALL FORTE / COMPRA CALL CAUTELOSA / COMPRA PUT FORTE / COMPRA PUT CAUTELOSA / AGUARDAR / NÃO OPERAR
+
+Adicione 2-3 frases de justificativa final.`;
+}
+
+// ═══════════════════════════════════════════
+// RUN SCAN
+// ═══════════════════════════════════════════
+async function runScan() {
+  const d = mktData[asset];
+  if (!d) { addLog('err', 'Dados não carregados. Clique em Recarregar.'); return; }
+  if (!d.derived) updateDerived();
+  const cfg = getCfg();
+  const kDS = cfg.dsKey;
+  const urlDS = cfg.dsUrl;
+  const kGM = cfg.gmKey;
+  const kCL = cfg.clKey;
+  const urlGM = cfg.gmUrl;
+  const urlCL = cfg.clUrl;
+  const cfgMsg = validateConfig(cfg);
+  if (cfgMsg) { addLog('err', cfgMsg); document.getElementById('cfgMask').classList.remove('hidden'); return; }
+
+  stopped = false;
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('scanIco').innerHTML = '<span class="spin"></span>';
+  document.getElementById('stopBtn').style.display = 'flex';
+
+  const dv = d.derived;
+  addLog('sys', `Scan ${asset} @ R$${d.price.toFixed(2)} | ATR:${d.atrPct.toFixed(2)}% | IV:${d.ivEst.toFixed(1)}% | Prêmio:R$${dv.prem.toFixed(2)} | ${dv.conts} contr | Δ:${dv.gC.delta} Γ:${dv.gC.gamma}`);
+
+  let dsScore=55, gmScore=55, clScore=55, dsDir='—', gmDir='—';
+  const pol = Object.keys(polRisk).length ? polRisk : { petr4:{nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'OK'}, vale3:{nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'OK'} };
+
+  // DS preferred, Claude fallback
+  setSt('ds', 'run'); addLog('info', kDS ? '[DEEPSEEK] Análise quantitativa...' : '[DEEPSEEK] Sem chave própria — usando Claude como fallback...');
+  try {
+    let txt;
+    if (kDS) {
+      try {
+        txt = await callDS(kDS, promptDS(d, macroObj, pol), urlDS);
+      } catch(de) {
+        addLog('warn', `[DEEPSEEK] ${de.message.substring(0,70)} — usando Claude`);
+        txt = await callCL(kCL, promptDS(d, macroObj, pol), 1200, urlCL);
+      }
+    } else {
+      txt = await callCL(kCL, promptDS(d, macroObj, pol), 1200, urlCL);
+    }
+    await typeInto('out-ds', txt);
+    dsScore = exScore(txt, ['QUANT SCORE','SCORE']);
+    document.getElementById('pb-ds').style.width = dsScore+'%';
+    document.getElementById('pv-ds').textContent = dsScore+'%';
+    setSt('ds', 'done'); dsDir = exLine(txt,'DIREÇÃO QUANT')||txt.substring(0,80);
+    addLog('ok', `[DEEPSEEK] Score: ${dsScore}/100 | ${dsDir.substring(0,50)}`);
+  } catch(e) { setSt('ds','err'); document.getElementById('out-ds').innerHTML=`<span style="color:var(--red)">ERRO: ${e.message}</span>`; addLog('err',`[DS] ${e.message}`); }
+
+  if (stopped) { finishScan(); return; }
+
+  // GM (Gemini preferred, Claude fallback)
+  setSt('gm', 'run'); addLog('info', '[GEMINI/CLAUDE] Análise macro...');
+  try {
+    let txt;
+    if (kGM) {
+      try { txt = await callGM(kGM, promptGM(d, macroObj, pol), urlGM); }
+      catch(ge) { addLog('warn',`[GEMINI] ${ge.message.substring(0,40)} — usando Claude`); txt = await callCL(kCL, promptGM(d, macroObj, pol), 1200, urlCL); }
+    } else {
+      txt = await callCL(kCL, promptGM(d, macroObj, pol), 1200, urlCL);
+    }
+    await typeInto('out-gm', txt);
+    gmScore = exScore(txt, ['MACRO SCORE','SCORE']);
+    document.getElementById('pb-gm').style.width = gmScore+'%';
+    document.getElementById('pv-gm').textContent = gmScore+'%';
+    setSt('gm', 'done'); gmDir = exLine(txt,'SINAL MACRO')||txt.substring(0,80);
+    addLog('ok', `[GEMINI/CL] Score: ${gmScore}/100 | ${gmDir.substring(0,50)}`);
+  } catch(e) { setSt('gm','err'); document.getElementById('out-gm').innerHTML=`<span style="color:var(--red)">ERRO: ${e.message}</span>`; addLog('err',`[GM] ${e.message}`); }
+
+  if (stopped) { finishScan(); return; }
+
+  // Claude risk+options
+  setSt('cl', 'run'); addLog('info', '[CLAUDE] Calculando opção e veredito...');
+  try {
+    const txt = await callCL(kCL, promptCL(d, macroObj, pol, dsDir, gmDir), 1200, urlCL);
+    await typeInto('out-cl', txt);
+    clScore = exScore(txt, ['RISK SCORE','SCORE']);
+    document.getElementById('pb-cl').style.width = clScore+'%';
+    document.getElementById('pv-cl').textContent = clScore+'%';
+    setSt('cl', 'done');
+    addLog('ok', `[CLAUDE] Score: ${clScore}/100`);
+    buildVerdict(d, txt, dsScore, gmScore, clScore, pol);
+  } catch(e) { setSt('cl','err'); document.getElementById('out-cl').innerHTML=`<span style="color:var(--red)">ERRO: ${e.message}</span>`; addLog('err',`[CL] ${e.message}`); buildVerdictFb(d, dsScore, gmScore, pol); }
+
+  finishScan();
+}
+
+// ═══════════════════════════════════════════
+// VERDICT
+// ═══════════════════════════════════════════
+const pN = s => { if(!s)return null; const m=(s+'').match(/[\d.,]+/); return m?parseFloat(m[0].replace(',','.')):null; };
+
+function applyVerdict(avg, isCall, isPut, noOp, isStrong, d, v) {
+  const ds = document.getElementById('dirSig');
+  const badge = document.getElementById('vbadge');
+  document.getElementById('dirAsset').textContent = `${asset} @ R$${d.price.toFixed(2)}`;
+  if (noOp || avg < 42) {
+    ds.className='dir-sig wait'; document.getElementById('dirType').textContent='✗ NÃO OPERAR';
+    document.getElementById('dirSub').textContent='Confluência insuficiente ou risco político';
+    document.getElementById('dirConf').className='dir-conf clo'; document.getElementById('dirConf').textContent=`Confiança: ${avg}% — BLOQUEADO`;
+    badge.className='vbadge vb-skip'; badge.textContent='✗ BLOQUEADO';
+    addLog('warn', `VEREDITO: NÃO OPERAR | Score:${avg}%`);
+  } else if (isCall && avg>=60) {
+    ds.className='dir-sig call'; document.getElementById('dirType').textContent='▲ COMPRA CALL';
+    document.getElementById('dirSub').textContent=isStrong?'3 camadas confirmadas — ALTA confiança':'Confluência moderada';
+    document.getElementById('dirConf').className='dir-conf chi'; document.getElementById('dirConf').textContent=`Confiança: ${avg}% — ${isStrong?'ALTA':'MÉDIA'}`;
+    badge.className='vbadge vb-call'; badge.textContent='▲ SINAL CALL';
+    addLog('ok', `VEREDITO: COMPRA CALL | Score:${avg}% | R$${v.strikeVal.toFixed(2)} | ${v.conts}x R$${v.premioVal.toFixed(2)}`);
+  } else if (isPut && avg>=60) {
+    ds.className='dir-sig put'; document.getElementById('dirType').textContent='▼ COMPRA PUT';
+    document.getElementById('dirSub').textContent=isStrong?'3 camadas confirmadas — ALTA confiança':'Confluência moderada';
+    document.getElementById('dirConf').className='dir-conf chi'; document.getElementById('dirConf').textContent=`Confiança: ${avg}% — ${isStrong?'ALTA':'MÉDIA'}`;
+    badge.className='vbadge vb-put'; badge.textContent='▼ SINAL PUT';
+    addLog('ok', `VEREDITO: COMPRA PUT | Score:${avg}% | R$${v.strikeVal.toFixed(2)} | ${v.conts}x R$${v.premioVal.toFixed(2)}`);
+  } else {
+    ds.className='dir-sig wait'; document.getElementById('dirType').textContent=isCall?'↗ CALL CAUTELOSA':isPut?'↘ PUT CAUTELOSA':'⏸ AGUARDAR';
+    document.getElementById('dirSub').textContent='Sinal fraco — aguardar confirmação';
+    document.getElementById('dirConf').className='dir-conf cmd'; document.getElementById('dirConf').textContent=`Confiança: ${avg}%`;
+    badge.className='vbadge vb-skip'; badge.textContent='⚠ SINAL FRACO';
+    addLog('warn', `VEREDITO: CAUTELOSA | Score:${avg}%`);
+  }
+  const pc = avg>=70?'var(--green)':avg>=55?'var(--yellow)':'var(--red)';
+  const rrOpt = (v.alvo1/v.stop).toFixed(1);
+  const sv = (id,val,color) => { const e=document.getElementById(id); if(e){e.textContent=val; if(color)e.style.color=color;} };
+  sv('vv-conf',`${Math.round(v.conf)}/3`, v.conf>=2?'var(--green)':'var(--yellow)');
+  sv('vv-prob',`${avg}%`, pc);
+  sv('vv-rr',`1:${rrOpt}`,'var(--green)');
+  sv('vv-iv',`${v.iv}%`, parseFloat(v.iv)>50?'var(--red)':parseFloat(v.iv)<30?'var(--green)':'var(--yellow)');
+  sv('vv-dte',`${Math.round(v.dte)}d`, null);
+  const oc = isCall?'var(--green)':isPut?'var(--red)':'var(--text3)';
+  sv('or-tipo', isCall?'CALL':isPut?'PUT':'—', oc);
+  sv('or-strike',`R$ ${v.strikeVal.toFixed(2)}`,'var(--text)');
+  sv('or-strike-s',`Δ ${v.delta} | ATM/OTM leve | máx liquidez`, null);
+  sv('or-premio',`R$ ${v.premioVal.toFixed(2)}`,'var(--text)');
+  sv('or-premio-s',`Stop: R$${v.stop.toFixed(2)} | Alvo: R$${v.alvo1.toFixed(2)}`, null);
+  sv('or-venc',`${Math.round(v.dte)}d`,'var(--text)');
+  sv('or-venc-s', nextVenc().date.toLocaleDateString('pt-BR'), null);
+  sv('gr-d',  v.delta);
+  sv('gr-g',  v.gamma);
+  sv('gr-t',  `-R$${v.theta}`);
+  sv('gr-v',  v.vega);
+  sv('gr-iv', `${v.iv}%`);
+  sv('gr-stop',`R$ ${v.stop.toFixed(2)}`);
+  sv('gr-a1',  `R$ ${v.alvo1.toFixed(2)}`);
+  sv('gr-a2',  `R$ ${v.alvo2.toFixed(2)}`);
+  sv('ky-f',   '18% do capital');
+  sv('ky-c',   `${v.conts} contratos`);
+  sv('ky-cap',`R$ ${Math.round(v.capAloc).toLocaleString('pt-BR')}`);
+  sv('ky-r',  `R$ ${Math.round(v.perdaMax).toLocaleString('pt-BR')}`);
+  histArr.push({ ts: new Date().toLocaleTimeString('pt-BR'), asset, vered: isCall?'CALL':isPut?'PUT':'—', strike: v.strikeVal.toFixed(2), premio: v.premioVal.toFixed(2), conts: v.conts, prob: avg, rr: rrOpt });
+  updateHist();
+}
+
+function buildVerdict(d, txt, dsScore, gmScore, clScore, pol) {
+  const avg = Math.round((dsScore+gmScore+clScore)/3);
+  const dv  = d.derived;
+  const gl  = k => exLine(txt, k);
+  const vered   = (gl('VEREDITO FINAL')||gl('VEREDITO')||'').toUpperCase();
+  const dirLine = (gl('DIREÇÃO FINAL')||'').toUpperCase();
+  const isCall  = /CALL/.test(vered)||/CALL/.test(dirLine);
+  const isPut   = !isCall && (/PUT/.test(vered)||/PUT/.test(dirLine));
+  const polA    = pol[asset.toLowerCase()]||{bloqueio:false};
+  const noOp    = /NÃO OPERAR|NAO OPERAR/.test(vered)||/NÃO OPERAR/.test(dirLine)||(polA.bloqueio&&avg<60);
+  const isStrong = /FORTE/.test(vered);
+  const g = isCall ? dv.gC : dv.gP;
+  applyVerdict(avg, isCall, isPut, noOp, isStrong, d, {
+    premioVal: dv.prem, strikeVal: isCall ? dv.sc : dv.sp, dte: dv.dte,
+    delta: g.delta, gamma: g.gamma, theta: Math.abs(g.theta).toFixed(5), vega: g.vega,
+    stop: dv.stop, alvo1: dv.prem*1.80, alvo2: dv.prem*2.50,
+    conts: dv.conts, capAloc: dv.conts*dv.prem*100, perdaMax: dv.conts*dv.stop*100,
+    conf: pN(gl('CONFLUÊNCIA')||gl('CONFLUENCIA'))||2, iv: dv.ivEst.toFixed(1)
+  });
+}
+
+function buildVerdictFb(d, dsScore, gmScore, pol) {
+  const avg = Math.round((dsScore+gmScore)/2);
+  const dv  = d.derived, polA = pol[asset.toLowerCase()]||{bloqueio:false};
+  const isCall = dsScore>=gmScore && !polA.bloqueio;
+  const g = isCall ? dv.gC : dv.gP;
+  applyVerdict(avg, isCall, !isCall&&!polA.bloqueio, polA.bloqueio, avg>=70, d, {
+    premioVal: dv.prem, strikeVal: isCall ? dv.sc : dv.sp, dte: dv.dte,
+    delta: g.delta, gamma: g.gamma, theta: Math.abs(g.theta).toFixed(5), vega: g.vega,
+    stop: dv.stop, alvo1: dv.prem*1.80, alvo2: dv.prem*2.50,
+    conts: dv.conts, capAloc: dv.conts*dv.prem*100, perdaMax: dv.conts*dv.stop*100,
+    conf: 2, iv: dv.ivEst.toFixed(1)
+  });
+}
+
+function updateHist() {
+  const tb = document.getElementById('histBody');
+  if (!histArr.length) return;
+  tb.innerHTML = histArr.slice().reverse().map(s => {
+    const cls = s.vered==='CALL'?'tg-c':s.vered==='PUT'?'tg-p':'tg-w';
+    return `<tr><td>${s.ts}</td><td style="color:var(--text);font-weight:600">${s.asset}</td><td><span class="tag ${cls}">${s.vered}</span></td><td>R$${s.strike}</td><td>R$${s.premio}</td><td>${s.conts}</td><td style="color:${s.prob>=70?'var(--green)':s.prob>=55?'var(--yellow)':'var(--red)'}">${s.prob}%</td><td>1:${s.rr}</td></tr>`;
+  }).join('');
+}
+
+function finishScan() {
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('scanIco').textContent = '▶';
+  document.getElementById('stopBtn').style.display = 'none';
+  addLog('info', 'Scan finalizado.');
+}
+
+async function runLearn() {
+  const cfg = getCfg();
+  const kCL = cfg.clKey;
+  const urlCL = cfg.clUrl;
+  if (!kCL || !urlCL) { addLog('err', 'Claude key + proxy necessários.'); document.getElementById('cfgMask').classList.remove('hidden'); return; }
+  if (!histArr.length) { addLog('warn', 'Gere sinais antes.'); return; }
+  setSt('learn','run');
+  document.getElementById('out-learn').innerHTML='<div class="empty"><div class="spin"></div><div class="etxt">Analisando...</div></div>';
+  const hs = histArr.map(s=>`${s.ts}|${s.asset}|${s.vered}|S:R$${s.strike}|P:R$${s.premio}|C:${s.conts}|Prob:${s.prob}%|RR:1:${s.rr}`).join('\n');
+  try {
+    const txt = await callCL(kCL, `Analise histórico de opções a seco PETR4/VALE3:\n${hs}\n\nIdentifique padrões de erro, viés direcional, problemas theta, baixa liquidez. Use: [PADRÃO], [RISCO], [RECOMENDAÇÃO], [REGRA DE OURO].`, 1200, urlCL);
+    await typeInto('out-learn', txt);
+    setSt('learn','done');
+  } catch(e) { setSt('learn','err'); document.getElementById('out-learn').innerHTML=`<span style="color:var(--red)">ERRO: ${e.message}</span>`; }
+}
+
+window.addEventListener('load', () => {
+  const cfg = loadSavedConfig();
+  prefillDefaultProxies();
+  if (validateConfig(getCfg())) {
+    document.getElementById('cfgMask').classList.remove('hidden');
+    addLog('warn', '[CONFIG] Preencha as APIs e proxies antes de iniciar.');
+    document.getElementById('overlay').classList.add('gone');
+    return;
+  }
+  document.getElementById('cfgMask').classList.add('hidden');
+  bootAll();
+});
+setInterval(() => {
+  if (document.getElementById('cfgMask')?.classList.contains('hidden') && !document.getElementById('scanBtn').disabled && !bootInProgress) bootAll();
+}, 15*60*1000);
 </script>
 </body>
 </html>
