@@ -930,7 +930,14 @@ ${MACRO_JSON_SCHEMA}`;
   return extractJsonObject(raw, 'macro Gemini');
 }
 
-async function fetchPolRisk(kCL, macro, clUrl) {
+function getDefaultPolRisk(reason = 'Fallback neutro aplicado') {
+  return {
+    petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:reason},
+    vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:reason}
+  };
+}
+
+async function fetchPolRisk(kCL, macro, clUrl, kGM = '', gmUrl = '') {
   const prompt = `Analise o risco político e jurídico ATUAL (${new Date().toLocaleDateString('pt-BR')}) para PETR4 (Petrobras) e VALE3 na B3 com base nos seguintes dados de mercado de hoje:
 Sentimento global: ${macro.sentimento}
 IBOV: ${macro.ibov?.v} (${macro.ibov?.c})
@@ -942,11 +949,19 @@ Considere: intervenções governamentais, política de dividendos, mudanças reg
 Retorne APENAS JSON válido sem markdown:
 {"petr4":{"nivel":"baixo|medio|alto|critico","score":0-100,"bloqueio":true|false,"driver":"ex: dividendos, regulação, neutro","just":"1 frase curta"},"vale3":{"nivel":"baixo|medio|alto|critico","score":0-100,"bloqueio":true|false,"driver":"ex: royalties, regulação, neutro","just":"1 frase curta"}}`;
 
-  const raw = await callCL(kCL, prompt, 400, clUrl);
   try {
+    const raw = await callCL(kCL, prompt, 400, clUrl);
     return extractJsonObject(raw, 'risco politico');
-  } catch (_) {
-    return { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem riscos identificados'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem riscos identificados'} };
+  } catch (clErr) {
+    if (kGM && gmUrl) {
+      try {
+        const raw = await callGM(kGM, prompt, gmUrl);
+        return extractJsonObject(raw, 'risco politico Gemini');
+      } catch (_) {
+        return getDefaultPolRisk('Fallback neutro: IA política indisponível');
+      }
+    }
+    return getDefaultPolRisk('Fallback neutro: IA política indisponível');
   }
 }
 
@@ -1187,18 +1202,22 @@ async function bootAll() {
   ovSub('Analisando risco político...');
   if (Object.keys(macroObj).length && kCL) {
     try {
-      const pol = await fetchPolRisk(kCL, macroObj, urlCL);
+      const pol = await fetchPolRisk(kCL, macroObj, urlCL, kGM, urlGM);
       polRisk = pol;
-      addLog('ok', `[POL RISK] PETR4: ${pol.petr4?.nivel} (${pol.petr4?.score}) | VALE3: ${pol.vale3?.nivel} (${pol.vale3?.score})`);
-      setOvStep('os-p', 'ok', `Risco político avaliado ✓`);
+      fillPolBadge(polRisk);
+      const usingFallback = /fallback neutro/i.test(pol.petr4?.just || '') || /fallback neutro/i.test(pol.vale3?.just || '');
+      addLog(usingFallback ? 'warn' : 'ok', `[POL RISK] PETR4: ${pol.petr4?.nivel} (${pol.petr4?.score}) | VALE3: ${pol.vale3?.nivel} (${pol.vale3?.score})`);
+      setOvStep('os-p', 'ok', usingFallback ? 'Risco político em fallback neutro ✓' : 'Risco político avaliado ✓');
     } catch (e) {
       addLog('warn', `[POL RISK] ${e.message}`);
-      setOvStep('os-p', 'err', 'Erro avaliação política');
-      polRisk = { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Erro na avaliação'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Erro na avaliação'} };
+      polRisk = getDefaultPolRisk('Fallback neutro: erro na avaliação');
+      fillPolBadge(polRisk);
+      setOvStep('os-p', 'ok', 'Risco político em fallback neutro ✓');
     }
   } else {
-    setOvStep('os-p', 'err', 'Macro não carregado — pulando');
-    polRisk = { petr4: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem dados macro'}, vale3: {nivel:'baixo',score:20,bloqueio:false,driver:'neutro',just:'Sem dados macro'} };
+    polRisk = getDefaultPolRisk('Sem dados macro');
+    fillPolBadge(polRisk);
+    setOvStep('os-p', 'ok', 'Risco político em fallback neutro ✓');
   }
 
   // ── 4. CALC ──
