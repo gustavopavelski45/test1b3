@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Council of Algos</title>
+<style>
+body{font-family:Arial;padding:20px;background:#111;color:#fff}
+input,button{padding:10px;margin:5px;width:300px}
+#log{background:#000;padding:15px;margin-top:20px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h2>Council of Algos</h2>
+
+<input id="ticker" value="PETR4"><br>
+<button onclick="scan()">SCAN</button>
+
+<div id="log"></div>
+
+<script>
+async function scan(){
+ const log = document.getElementById("log");
+ log.innerText = "Buscando cotações...";
+
+ try{
+   const q = await fetch("https://brapi.dev/api/quote/PETR4?token=");
+   const data = await q.json();
+   const price = data.results?.[0]?.regularMarketPrice || "N/A";
+
+   log.innerText += "\\nPETR4: R$"+price;
+
+   const c = await fetch("/api/claude",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:`Analise PETR4 hoje a R$${price} e diga compra ou venda com score.`})
+   });
+
+   const r = await c.json();
+   log.innerText += "\\nClaude respondeu:\\n"+JSON.stringify(r,null,2);
+
+ }catch(e){
+   log.innerText += "\\nErro: "+e.message;
+ }
+}
+</script>
+</body>
+</html>
