@@ -1024,9 +1024,9 @@ async function postProxy(finalUrl, providerLabel, payload) {
   if (!r.ok) throw new Error(data.error || data.message || `${providerLabel} proxy ${r.status}`);
   return data;
 }
-async function callCLPayload(key, prompt, maxTok = 1200, proxyUrl = '') {
+async function callCLPayload(key, prompt, maxTok = 1200, proxyUrl = '', extra = {}) {
   const finalUrl = normalizeProxyUrl(proxyUrl, 'Claude');
-  return postProxy(finalUrl, 'Claude', { apiKey: key, prompt, max_tokens: maxTok });
+  return postProxy(finalUrl, 'Claude', { apiKey: key, prompt, max_tokens: maxTok, ...extra });
 }
 async function callGMPayload(key, prompt, proxyUrl = '') {
   const finalUrl = normalizeProxyUrl(proxyUrl, 'Gemini');
@@ -1207,6 +1207,64 @@ function nextVenc() {
 // ═══════════════════════════════════════════
 const MACRO_JSON_SCHEMA = `{"brent":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"minerio":{"v":"XXX","c":"+X.X%","t":"alta|queda|neutro"},"usd_brl":{"v":"X.XX","c":"+X.X%","t":"alta|queda|neutro"},"dxy":{"v":"XXX.X","c":"+X.X%","t":"alta|queda|neutro"},"vix":{"v":"XX.X","c":"+X.X%","t":"alta|queda|neutro"},"pbr":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"vale_adr":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"selic":{"v":"XX.XX%","c":"estavel|subindo|caindo"},"petr4":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"vale3":{"v":"XX.XX","c":"+X.X%","t":"alta|queda|neutro"},"ibov":{"v":"XXXXXX","c":"+X.X%","t":"alta|queda|neutro"},"sentimento":"bullish|bearish|neutro","narr_petr4":"driver principal PETR4 hoje em 1 frase","narr_vale3":"driver principal VALE3 hoje em 1 frase","narrativa":"contexto macro B3 hoje em 2 frases"}`;
 
+function fmtMacroNumber(v, digits = 2) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toFixed(digits) : digits === 0 ? '0' : '0'.padEnd(digits + 2, '.0');
+}
+function fmtMacroPct(v) {
+  const n = Number(v);
+  const safe = Number.isFinite(n) ? n : 0;
+  return `${safe >= 0 ? '+' : ''}${safe.toFixed(1)}%`;
+}
+function pctTrend(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 'neutro';
+  if (n > 0.05) return 'alta';
+  if (n < -0.05) return 'queda';
+  return 'neutro';
+}
+function avgPct(...values) {
+  const nums = values.map(Number).filter(Number.isFinite);
+  if (!nums.length) return 0;
+  return nums.reduce((a,b) => a + b, 0) / nums.length;
+}
+function buildFallbackMacro(reason = 'Fallback local ativado') {
+  const p4 = mktData.PETR4 || {};
+  const v3 = mktData.VALE3 || {};
+  const petrPct = Number(p4.chgPct || 0);
+  const valePct = Number(v3.chgPct || 0);
+  const avgLocal = avgPct(petrPct, valePct);
+  const sentiment = avgLocal > 0.35 ? 'bullish' : avgLocal < -0.35 ? 'bearish' : 'neutro';
+  return {
+    brent: { v: '0.00', c: '+0.0%', t: 'neutro' },
+    minerio: { v: '0', c: '+0.0%', t: 'neutro' },
+    usd_brl: { v: '0.00', c: '+0.0%', t: 'neutro' },
+    dxy: { v: '0.0', c: '+0.0%', t: 'neutro' },
+    vix: { v: '0.0', c: '+0.0%', t: 'neutro' },
+    pbr: { v: '0.00', c: '+0.0%', t: 'neutro' },
+    vale_adr: { v: '0.00', c: '+0.0%', t: 'neutro' },
+    selic: { v: '0.00%', c: 'estavel' },
+    petr4: { v: fmtMacroNumber(p4.price, 2), c: fmtMacroPct(petrPct), t: pctTrend(petrPct) },
+    vale3: { v: fmtMacroNumber(v3.price, 2), c: fmtMacroPct(valePct), t: pctTrend(valePct) },
+    ibov: { v: fmtMacroNumber(130000 + avgLocal * 500, 0), c: fmtMacroPct(avgLocal), t: pctTrend(avgLocal) },
+    sentimento: sentiment,
+    narr_petr4: p4.src ? `Leitura local baseada em ${p4.src}.` : 'Leitura local sem macro externa.',
+    narr_vale3: v3.src ? `Leitura local baseada em ${v3.src}.` : 'Leitura local sem macro externa.',
+    narrativa: `${reason}. O painel segue com preços locais e viés neutro até a macro externa responder em JSON válido.`
+  };
+}
+async function parseJsonWithRepair(raw, label, schema, repairCall = null) {
+  try {
+    return extractJsonObject(raw, label);
+  } catch (firstErr) {
+    if (!repairCall) throw firstErr;
+    const rawText = stripJsonFences(extractTextPayload(raw));
+    if (!rawText) throw firstErr;
+    const repaired = await repairCall(rawText);
+    return extractJsonObject(repaired, `${label} reparado`);
+  }
+}
+
 async function fetchMacroClaude(kCL, clUrl) {
   const prompt = `Você é um analista financeiro com acesso às informações mais recentes. Busque e forneça os preços e variações de mercado de HOJE (${new Date().toLocaleDateString('pt-BR')}) para:
 - Petróleo Brent (preço em USD/barril e variação %)
@@ -1226,8 +1284,12 @@ Retorne APENAS o JSON abaixo preenchido com os dados reais de hoje. Sem markdown
 Se algum campo estiver indisponível em tempo real, use o último valor disponível do dia/fechamento recente, mas mantenha TODAS as chaves do objeto.
 ${MACRO_JSON_SCHEMA}`;
 
-  const raw = await callCLPayload(kCL, prompt, 800, clUrl);
-  return extractJsonObject(raw, 'macro na resposta Claude');
+  const raw = await callCLPayload(kCL, prompt, 800, clUrl, {
+    system: 'Responda somente com um objeto JSON válido. Não use markdown. Não escreva explicações.'
+  });
+  return parseJsonWithRepair(raw, 'macro na resposta Claude', MACRO_JSON_SCHEMA, (rawText) => callCLPayload(kCL, `Transforme o conteúdo abaixo em JSON válido, mantendo exatamente o schema pedido. Responda apenas com o objeto JSON.\n\nSCHEMA:\n${MACRO_JSON_SCHEMA}\n\nCONTEÚDO:\n${rawText}`, 700, clUrl, {
+    system: 'Sua única tarefa é converter conteúdo em JSON válido sem texto adicional.'
+  }));
 }
 
 async function fetchMacroGemini(kGM, gmUrl) {
@@ -1235,7 +1297,7 @@ async function fetchMacroGemini(kGM, gmUrl) {
 Se algum campo estiver indisponível em tempo real, use o último valor disponível do dia/fechamento recente, mas mantenha TODAS as chaves do objeto.
 ${MACRO_JSON_SCHEMA}`;
   const raw = await callGMPayload(kGM, prompt, gmUrl);
-  return extractJsonObject(raw, 'macro Gemini');
+  return parseJsonWithRepair(raw, 'macro Gemini', MACRO_JSON_SCHEMA, (rawText) => callGMPayload(kGM, `Converta o conteúdo abaixo para JSON válido e responda somente com o objeto.\n\nSCHEMA:\n${MACRO_JSON_SCHEMA}\n\nCONTEÚDO:\n${rawText}`, gmUrl));
 }
 
 function getDefaultPolRisk(reason = 'Fallback neutro aplicado') {
@@ -1726,10 +1788,12 @@ async function bootAll() {
       }
     }
   } catch (e) {
-    addLog('err', `[MACRO] Erro: ${e.message}`);
+    addLog('warn', `[MACRO] ${e.message} — ativando fallback local`);
+    const fallback = buildFallbackMacro(`Macro externa indisponível (${e.message.substring(0,60)})`);
+    fillMacro(fallback, 'Fallback local');
     document.getElementById('mst').className = 'mst mst-err';
-    document.getElementById('mst').textContent = '✗ Erro macro: ' + e.message.substring(0,40);
-    setOvStep('os-m', 'err', 'Erro: ' + e.message.substring(0,40));
+    document.getElementById('mst').textContent = '⚠ Macro em fallback local';
+    setOvStep('os-m', 'err', 'Macro externa falhou — fallback local ✓');
   }
 
   // ── 3. POL RISK ──
