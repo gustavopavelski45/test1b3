@@ -963,55 +963,91 @@ function extractTextPayload(data) {
   if (data.raw && data.raw !== data) return extractTextPayload(data.raw);
   return '';
 }
-function extractJsonObject(raw, label) {
-  const clean = extractTextPayload(raw).replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-  const s = clean.indexOf('{');
-  const e = clean.lastIndexOf('}');
-  if (s === -1 || e === -1 || e < s) {
-    throw new Error(`JSON ${label} não encontrado`);
-  }
+function stripJsonFences(raw) {
+  return String(raw || '').replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+}
+function tryParseObject(candidate) {
+  if (typeof candidate !== 'string') return null;
   try {
-    return JSON.parse(clean.substring(s, e + 1));
-  } catch (err) {
-    throw new Error(`JSON ${label} inválido: ${err.message}`);
+    const parsed = JSON.parse(candidate);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
   }
 }
-async function callCL(key, prompt, maxTok = 1200, proxyUrl = '') {
-  const finalUrl = normalizeProxyUrl(proxyUrl, 'Claude');
+function findJsonCandidates(raw) {
+  const clean = stripJsonFences(raw);
+  const out = [];
+  const direct = tryParseObject(clean);
+  if (direct) return [direct];
+
+  for (let start = 0; start < clean.length; start++) {
+    if (clean[start] !== '{') continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < clean.length; i++) {
+      const ch = clean[i];
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          const parsed = tryParseObject(clean.slice(start, i + 1));
+          if (parsed) out.push(parsed);
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+function extractJsonObject(raw, label) {
+  if (raw && typeof raw === 'object' && raw.json && typeof raw.json === 'object' && !Array.isArray(raw.json)) {
+    return raw.json;
+  }
+  const candidates = findJsonCandidates(extractTextPayload(raw));
+  if (candidates.length) return candidates[0];
+  throw new Error(`JSON ${label} não encontrado`);
+}
+async function postProxy(finalUrl, providerLabel, payload) {
   const r = await fetch(finalUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey: key, prompt, max_tokens: maxTok })
+    body: JSON.stringify(payload)
   });
   let data = {};
   try { data = await r.json(); } catch (_) {}
-  if (!r.ok) throw new Error(data.error || data.message || `Claude proxy ${r.status}`);
+  if (!r.ok) throw new Error(data.error || data.message || `${providerLabel} proxy ${r.status}`);
+  return data;
+}
+async function callCLPayload(key, prompt, maxTok = 1200, proxyUrl = '') {
+  const finalUrl = normalizeProxyUrl(proxyUrl, 'Claude');
+  return postProxy(finalUrl, 'Claude', { apiKey: key, prompt, max_tokens: maxTok });
+}
+async function callGMPayload(key, prompt, proxyUrl = '') {
+  const finalUrl = normalizeProxyUrl(proxyUrl, 'Gemini');
+  return postProxy(finalUrl, 'Gemini', { apiKey: key, prompt });
+}
+async function callDSPayload(key, prompt, proxyUrl = '') {
+  const finalUrl = normalizeProxyUrl(proxyUrl, 'DeepSeek');
+  return postProxy(finalUrl, 'DeepSeek', { apiKey: key, prompt });
+}
+async function callCL(key, prompt, maxTok = 1200, proxyUrl = '') {
+  const data = await callCLPayload(key, prompt, maxTok, proxyUrl);
   return extractTextPayload(data);
 }
 
 async function callGM(key, prompt, proxyUrl = '') {
-  const finalUrl = normalizeProxyUrl(proxyUrl, 'Gemini');
-  const r = await fetch(finalUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey: key, prompt })
-  });
-  let data = {};
-  try { data = await r.json(); } catch (_) {}
-  if (!r.ok) throw new Error(data.error || data.message || `Gemini proxy ${r.status}`);
+  const data = await callGMPayload(key, prompt, proxyUrl);
   return extractTextPayload(data);
 }
 
 async function callDS(key, prompt, proxyUrl = '') {
-  const finalUrl = normalizeProxyUrl(proxyUrl, 'DeepSeek');
-  const r = await fetch(finalUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey: key, prompt })
-  });
-  let data = {};
-  try { data = await r.json(); } catch (_) {}
-  if (!r.ok) throw new Error(data.error || data.message || `DeepSeek proxy ${r.status}`);
+  const data = await callDSPayload(key, prompt, proxyUrl);
   return extractTextPayload(data);
 }
 
@@ -1186,17 +1222,19 @@ async function fetchMacroClaude(kCL, clUrl) {
 - Ibovespa (pontos e variação %)
 - Sentimento geral dos mercados hoje
 
-Retorne APENAS o JSON abaixo preenchido com os dados reais de hoje. Sem markdown, sem texto adicional, apenas o JSON:
+Retorne APENAS o JSON abaixo preenchido com os dados reais de hoje. Sem markdown, sem texto adicional, apenas o JSON.
+Se algum campo estiver indisponível em tempo real, use o último valor disponível do dia/fechamento recente, mas mantenha TODAS as chaves do objeto.
 ${MACRO_JSON_SCHEMA}`;
 
-  const raw = await callCL(kCL, prompt, 800, clUrl);
+  const raw = await callCLPayload(kCL, prompt, 800, clUrl);
   return extractJsonObject(raw, 'macro na resposta Claude');
 }
 
 async function fetchMacroGemini(kGM, gmUrl) {
-  const prompt = `Busque os dados de mercado de HOJE e retorne APENAS este JSON preenchido (sem markdown, sem texto extra):
+  const prompt = `Busque os dados de mercado de HOJE e retorne APENAS este JSON preenchido (sem markdown, sem texto extra).
+Se algum campo estiver indisponível em tempo real, use o último valor disponível do dia/fechamento recente, mas mantenha TODAS as chaves do objeto.
 ${MACRO_JSON_SCHEMA}`;
-  const raw = await callGM(kGM, prompt, gmUrl);
+  const raw = await callGMPayload(kGM, prompt, gmUrl);
   return extractJsonObject(raw, 'macro Gemini');
 }
 
@@ -1216,16 +1254,16 @@ Narrativa: ${macro.narrativa}
 
 Considere: intervenções governamentais, política de dividendos, mudanças regulatórias, decisões judiciais, declarações de ministros ou presidente sobre Petrobras/Vale.
 
-Retorne APENAS JSON válido sem markdown:
+Retorne APENAS JSON válido sem markdown. Não explique nada fora do objeto. Mantenha todas as chaves:
 {"petr4":{"nivel":"baixo|medio|alto|critico","score":0-100,"bloqueio":true|false,"driver":"ex: dividendos, regulação, neutro","just":"1 frase curta"},"vale3":{"nivel":"baixo|medio|alto|critico","score":0-100,"bloqueio":true|false,"driver":"ex: royalties, regulação, neutro","just":"1 frase curta"}}`;
 
   try {
-    const raw = await callCL(kCL, prompt, 400, clUrl);
+    const raw = await callCLPayload(kCL, prompt, 400, clUrl);
     return extractJsonObject(raw, 'risco politico');
   } catch (clErr) {
     if (kGM && gmUrl) {
       try {
-        const raw = await callGM(kGM, prompt, gmUrl);
+        const raw = await callGMPayload(kGM, prompt, gmUrl);
         return extractJsonObject(raw, 'risco politico Gemini');
       } catch (_) {
         return getDefaultPolRisk('Fallback neutro: IA política indisponível');

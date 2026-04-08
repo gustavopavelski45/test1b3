@@ -26,6 +26,67 @@ function extractAnthropicText(data) {
   return "";
 }
 
+function stripCodeFences(text) {
+  return String(text || "")
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+}
+
+function tryParseJsonObject(text) {
+  if (typeof text !== "string") return null;
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function extractEmbeddedJson(text) {
+  const clean = stripCodeFences(text);
+  const direct = tryParseJsonObject(clean);
+  if (direct) return direct;
+
+  for (let start = 0; start < clean.length; start += 1) {
+    if (clean[start] !== "{") continue;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = start; i < clean.length; i += 1) {
+      const ch = clean[i];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (ch === "\"") {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+      if (ch === "{") depth += 1;
+      if (ch === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          const candidate = clean.slice(start, i + 1);
+          const parsed = tryParseJsonObject(candidate);
+          if (parsed) return parsed;
+          break;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function extractGeminiText(data) {
   return (
     data?.text ||
@@ -70,7 +131,9 @@ app.post("/api/claude", async (req, res) => {
       },
       body: JSON.stringify({
         model,
+        system: typeof req.body?.system === "string" ? req.body.system : undefined,
         max_tokens: Number(req.body?.max_tokens) || 500,
+        temperature: 0,
         messages: [{ role: "user", content: req.body?.prompt || "" }]
       })
     });
@@ -80,7 +143,9 @@ app.post("/api/claude", async (req, res) => {
       return res.status(r.status).json({ error: buildErrorMessage(data, `Claude ${r.status}`), model, raw: data });
     }
 
-    res.json({ text: extractAnthropicText(data), model, raw: data });
+    const text = extractAnthropicText(data);
+    const json = extractEmbeddedJson(text);
+    res.json({ text, json, model, raw: data });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -97,6 +162,7 @@ app.post("/api/gemini", async (req, res) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        generationConfig: { temperature: 0 },
         contents: [{ parts: [{ text: req.body?.prompt || "" }] }]
       })
     });
@@ -106,7 +172,9 @@ app.post("/api/gemini", async (req, res) => {
       return res.status(r.status).json({ error: buildErrorMessage(data, `Gemini ${r.status}`), raw: data });
     }
 
-    res.json({ text: extractGeminiText(data), raw: data });
+    const text = extractGeminiText(data);
+    const json = extractEmbeddedJson(text);
+    res.json({ text, json, raw: data });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -127,6 +195,7 @@ app.post("/api/deepseek", async (req, res) => {
       },
       body: JSON.stringify({
         model: "deepseek-chat",
+        temperature: 0,
         messages: [{ role: "user", content: req.body?.prompt || "" }]
       })
     });
@@ -136,7 +205,9 @@ app.post("/api/deepseek", async (req, res) => {
       return res.status(r.status).json({ error: buildErrorMessage(data, `DeepSeek ${r.status}`), raw: data });
     }
 
-    res.json({ text: extractDeepSeekText(data), raw: data });
+    const text = extractDeepSeekText(data);
+    const json = extractEmbeddedJson(text);
+    res.json({ text, json, raw: data });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
